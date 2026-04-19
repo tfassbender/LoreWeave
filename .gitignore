@@ -1,0 +1,22 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# IntelliJ build / run artifacts
+cmake-build-*/
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# Claude Code (user-local, machine-specific)
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
