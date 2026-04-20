@@ -15,18 +15,18 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 
 **Exit criteria**: `./gradlew quarkusDev` boots and serves a trivial endpoint.
 
-- [ ] Create `LICENSE` (MIT, standard text) at repo root
-- [ ] Generate Gradle wrapper (`gradlew`, `gradlew.bat`, Gradle 8.x)
-- [ ] Create `settings.gradle`, `build.gradle`, `gradle.properties` — Quarkus 3.x, Java 21, group `com.tfassbender.loreweave`
-- [ ] Apply the Quarkus Gradle plugin; configure `quarkusBuild` fast-jar output
-- [ ] Add Quarkus extensions: `quarkus-rest`, `quarkus-rest-jackson`, `quarkus-smallrye-openapi`, `quarkus-smallrye-health`, `quarkus-scheduler`, `quarkus-picocli`
-- [ ] Add plain dependencies: JGit, commonmark-java, snakeyaml-engine
-- [ ] Add test dependencies: JUnit 5, RestAssured, AssertJ
-- [ ] Create package skeleton under `com.tfassbender.loreweave`: `config`, `domain`, `parsing`, `graph`, `git`, `rest`, `cli`, `health`
-- [ ] Add `src/main/resources/application.properties` with default keys (`loreweave.vault.remote`, `loreweave.vault.local-path`, `loreweave.auth.token`, `loreweave.sync.interval`)
-- [ ] Add `application-local.properties` entry to `.gitignore`
-- [ ] Add a temporary `GET /q/ping` endpoint and smoke-test it with `./gradlew quarkusDev`
-- [ ] Update `CLAUDE.md` with the real build/run commands now that they exist
+- [x] Create `LICENSE` (MIT, standard text) at repo root
+- [x] Generate Gradle wrapper (`gradlew`, `gradlew.bat`, Gradle 8.10)
+- [x] Create `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties` — Quarkus 3.17.8, Java 21, group `com.tfassbender.loreweave`
+- [x] Apply the Quarkus Gradle plugin; configure `quarkusBuild` fast-jar output
+- [x] Add Quarkus extensions: `quarkus-rest`, `quarkus-rest-jackson`, `quarkus-smallrye-openapi`, `quarkus-smallrye-health`, `quarkus-scheduler` (picocli deferred to phase 8 — it hijacks the main lifecycle via `@TopCommand`, which conflicts with the server runtime)
+- [x] Add plain dependencies: JGit, commonmark-java, snakeyaml-engine
+- [x] Add test dependencies: JUnit 5 (via `quarkus-junit5`), RestAssured, AssertJ
+- [x] Create package skeleton under `com.tfassbender.loreweave`: `config`, `domain`, `parsing`, `graph`, `git`, `rest`, `cli`, `health` (each with a `package-info.java` so the empty dirs are committed)
+- [x] Add `src/main/resources/application.properties` with default keys (`loreweave.vault.remote`, `loreweave.vault.local-path`, `loreweave.auth.token`, `loreweave.sync.interval`)
+- [x] Add `application-local.properties` entry to `.gitignore` (also added `.gradle/`, `build/`, `vault/`)
+- [x] Add a temporary `GET /ping` endpoint and smoke-test it (path changed from `/q/ping` — the `/q/*` namespace is reserved for Quarkus management endpoints like `/q/openapi` and `/q/health`)
+- [x] Update `CLAUDE.md` with the real build/run commands now that they exist
 
 ---
 

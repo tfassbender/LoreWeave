@@ -8,7 +8,7 @@ Technology choices for the LoreWeave implementation. Decisions are stable but no
 |---|---|
 | Language | Java 21 (LTS) |
 | Framework | Quarkus 3.x |
-| Build tool | Gradle (Groovy DSL) |
+| Build tool | Gradle (Kotlin DSL) |
 | Group / root package | `com.tfassbender.loreweave` |
 | Packaging | `quarkus-app` fast-jar, JVM mode |
 | HTTP layer | Quarkus REST (RESTEasy Reactive) |
@@ -30,7 +30,7 @@ Technology choices for the LoreWeave implementation. Decisions are stable but no
 The user has existing Quarkus experience. Quarkus gives us fast boot, dev-mode hot reload, first-class REST/CDI/config, and an optional native-image path held for later. Java 21 unlocks records, pattern matching for switch, and virtual threads — useful for the parsing and graph-walking code.
 
 ### Gradle over Maven
-User preference. Groovy DSL to match Quarkus's official scaffolding documentation.
+User preference. Kotlin DSL for type-safe build scripts and better IntelliJ support.
 
 ### JGit over system git
 Removes a runtime dependency (no `git` required on the server), identical behavior across Windows development and Linux production, and typed exceptions instead of stdout parsing. Well-maintained by the Eclipse Foundation; used internally by Gerrit, Eclipse/EGit, and JetBrains tooling.
@@ -52,7 +52,7 @@ Low-volume solo project. GitHub Actions can be added later if the code surface m
 
 ## Dependency versions
 
-Exact versions are pinned in `build.gradle` at the time of scaffolding. Rule: prefer the latest stable release at the first commit of each phase, with explicit version upgrades thereafter. Expect roughly:
+Exact versions are pinned in `build.gradle.kts` at the time of scaffolding. Rule: prefer the latest stable release at the first commit of each phase, with explicit version upgrades thereafter. Expect roughly:
 
 - Quarkus 3.17+
 - JGit 6.10+

@@ -14,7 +14,22 @@ Authoritative documentation lives in `doc/`. Read the relevant ones before propo
 - `doc/vault_schema.md` — frontmatter + body + validation rules
 - `doc/implementation_plan.md` — phased roadmap with checkboxes. **Canonical source of truth for "done" and "next"** — tick items off in the same commit that completes them.
 
-No runnable code yet. Build/test/run commands will land in phase 1; **update this section's command list once `build.gradle` exists.**
+## Build, test, run
+
+Gradle wrapper is committed — no system Gradle needed. JDK 21 is required on `PATH` (the Gradle toolchain pins Java 21).
+
+- Dev mode (hot reload): `./gradlew quarkusDev` — serves on `http://localhost:4717` (configurable via `quarkus.http.port`).
+- Tests: `./gradlew test` (Quarkus + RestAssured).
+- Fast-jar build: `./gradlew build` — artifact at `build/quarkus-app/quarkus-run.jar`.
+- Run fast-jar: `java -jar build/quarkus-app/quarkus-run.jar`.
+
+Smoke endpoints available after boot:
+
+- `GET /ping` — returns `{"status":"ok"}` (temporary, will be removed when the real REST surface lands).
+- `GET /q/health` — SmallRye Health.
+- `GET /q/openapi` — generated OpenAPI (YAML).
+
+Machine-specific settings go in `application-local.properties` (git-ignored); see `src/main/resources/application.properties` for defaults.
 
 ## What LoreWeave Is
 
@@ -25,7 +40,7 @@ A REST API that turns a Git-backed Obsidian vault of markdown notes into a query
 Full detail in `doc/tech_stack.md`. In short:
 
 - **Java 21** on **Quarkus 3.x** (JVM mode, fast-jar packaging — no native image in v1)
-- **Gradle** (Groovy DSL)
+- **Gradle** (Kotlin DSL)
 - Root group/package: `com.tfassbender.loreweave`
 - **JGit** for all git operations — no system `git` dependency at runtime
 - **commonmark-java** for markdown AST, **snakeyaml-engine** for YAML frontmatter

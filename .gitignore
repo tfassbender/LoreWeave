@@ -20,3 +20,11 @@ fabric.properties
 # OS
 .DS_Store
 Thumbs.db
+
+# Gradle / build output
+.gradle/
+build/
+
+# LoreWeave: machine-specific config and cloned vault
+application-local.properties
+vault/
