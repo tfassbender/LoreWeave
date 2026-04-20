@@ -97,7 +97,7 @@ Full rules and examples in `doc/vault_schema.md`.
 | Optional                         | `aliases`, `metadata`                |
 
 - Body links: `[[wiki-style]]` only — markdown links and `![[embeds]]` are ignored. Fragments (`#heading`, `#^block`) and pipe-display (`|display`) are stripped before resolution.
-- Link resolution order: **full path → alias → basename** (case-insensitive).
+- Link resolution order: **full path → basename** (case-insensitive, `.md` optional). Aliases declared in frontmatter are kept as metadata but are **not** used for link resolution. Wiki-links whose target has a known attachment extension (`.pdf`, `.png`, `.mp3`, …) are silently dropped at extraction time — they never reach the graph and never raise `unresolved_links`.
 - Title fallback chain: `title:` → filename without `.md` → ID-derived.
 - Tags: inline `#hashtag` only, extracted via AST walk, lowercased, deduped.
 

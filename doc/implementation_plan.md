@@ -50,24 +50,24 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 
 **Exit criteria**: given a vault directory, we produce an in-memory `Index` with backlinks and a complete `ValidationReport`.
 
-- [ ] `VaultScanner` — recursive `.md` walk; skip `.git/`, `.obsidian/`, `.trash/`, any dot-prefixed directory
-- [ ] `LinkResolver` — resolution order: full path → alias → basename (case-insensitive); returns `Optional<String>` (target ID)
-- [ ] `IndexBuilder` — assembles `Map<String, Note>`, builds auxiliary indexes (alias, basename)
-- [ ] Backlink computation pass — for each forward link, append a `Backlink` to the target note
-- [ ] Validation — all categories populated into a `ValidationReport`:
-  - [ ] `parse_errors`
-  - [ ] `missing_required_fields`
-  - [ ] `invalid_id_format`
-  - [ ] `duplicate_ids`
-  - [ ] `unresolved_links`
-  - [ ] `missing_title` (warning)
-  - [ ] `missing_summary` (warning)
-  - [ ] `missing_schema_version` (warning)
-- [ ] `ValidationReport` caps sample paths at 5 per category, keeps full counts
-- [ ] `Index` — immutable snapshot holding the note map, alias/basename indexes, and the report
-- [ ] Notes with errors are excluded from the served index (but their incoming links surface as `unresolved_links`)
-- [ ] Fixture vaults under `src/test/resources/`: `vault-valid/` (small clean vault) and `vault-invalid/` (exercises each category)
-- [ ] Unit tests covering index build + every validation category
+- [x] `VaultScanner` — recursive `.md` walk; skip `.git/`, `.obsidian/`, `.trash/`, any dot-prefixed directory (also handles IO read failures as `parse_errors`)
+- [x] `LinkResolver` — resolution order: full path → basename (case-insensitive, `.md` optional); returns `Optional<String>` (target ID). Tie-break on multiple matches: first-inserted wins; callers feed notes sorted by source path for determinism. Aliases are **not** consulted — they're metadata only. `WikiLinkExtractor` also drops links whose target ends in a known attachment extension (pdf/png/mp3/…) so such links neither enter the graph nor raise `unresolved_links`.
+- [x] `IndexBuilder` — assembles `Map<String, IndexedNote>`, builds the resolver over served notes only so links to excluded notes surface as `unresolved_links`
+- [x] Backlink computation pass — inverting resolved forward edges into `Backlink` lists attached to `IndexedNote` (not to `Note` itself, which stays a parseable-in-isolation record)
+- [x] Validation — all categories populated into a `ValidationReport`:
+  - [x] `parse_errors`
+  - [x] `missing_required_fields`
+  - [x] `invalid_id_format`
+  - [x] `duplicate_ids`
+  - [x] `unresolved_links`
+  - [x] `missing_title` (warning)
+  - [x] `missing_summary` (warning)
+  - [x] `missing_schema_version` (warning)
+- [x] `ValidationReport` caps sample paths at 5 per category, keeps full counts
+- [x] `Index` — immutable snapshot holding `Map<String, IndexedNote>` and the report (plus `ResolvedLink` wrappers carrying both the raw link and its resolution outcome)
+- [x] Notes with errors are excluded from the served index (but their incoming links surface as `unresolved_links`)
+- [x] Fixture vaults under `src/test/resources/`: `vault-valid/` (4 notes: characters/kael, characters/rex, locations/karsis, factions/union) and `vault-invalid/` (one file per error/warning category)
+- [x] Unit tests covering index build + every validation category (14 new tests across 3 classes; all green)
 
 ---
 

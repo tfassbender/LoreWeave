@@ -10,6 +10,8 @@ import org.commonmark.node.Text;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,6 +29,21 @@ public final class WikiLinkExtractor {
     // [[ followed by anything that isn't ]] or a newline. We capture the whole
     // inside and split on | / # afterwards, so we don't need complex groups.
     private static final Pattern WIKI_LINK = Pattern.compile("\\[\\[([^\\]\\n]+)]]");
+
+    /**
+     * File extensions recognized as non-note attachments. Links whose raw target
+     * ends in one of these are silently dropped — the vault may contain
+     * {@code [[diagram.png]]} or {@code [[deck.pdf]]}, but LoreWeave does not
+     * index attachments, so such links are ignored rather than flagged as
+     * unresolved.
+     */
+    private static final Set<String> ATTACHMENT_EXTENSIONS = Set.of(
+            "png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "tiff", "heic",
+            "pdf",
+            "mp3", "wav", "ogg", "m4a", "flac",
+            "mp4", "mov", "webm", "mkv", "avi",
+            "zip", "tar", "gz", "7z",
+            "canvas");
 
     public List<Link> extract(Node root) {
         List<Link> out = new ArrayList<>();
@@ -73,8 +90,19 @@ public final class WikiLinkExtractor {
             if (inner.isEmpty()) {
                 continue;
             }
-            out.add(parseInner(inner));
+            Link link = parseInner(inner);
+            if (isAttachmentTarget(link.rawTarget())) {
+                continue;
+            }
+            out.add(link);
         }
+    }
+
+    private static boolean isAttachmentTarget(String rawTarget) {
+        int dot = rawTarget.lastIndexOf('.');
+        if (dot < 0 || dot == rawTarget.length() - 1) return false;
+        String ext = rawTarget.substring(dot + 1).toLowerCase(Locale.ROOT);
+        return ATTACHMENT_EXTENSIONS.contains(ext);
     }
 
     private static Link parseInner(String inner) {

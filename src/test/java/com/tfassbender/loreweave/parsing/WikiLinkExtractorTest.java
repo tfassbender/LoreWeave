@@ -51,6 +51,30 @@ class WikiLinkExtractorTest {
     }
 
     @Test
+    void attachmentLinksAreDropped() {
+        // Non-note targets (images, pdfs, audio, video, archives) are ignored —
+        // they're valid Obsidian links but LoreWeave doesn't index attachments,
+        // so we drop them at extraction time rather than flag unresolved_links.
+        assertThat(extract("See [[document.pdf]] and [[diagram.png]] and [[theme.mp3]].")).isEmpty();
+    }
+
+    @Test
+    void attachmentsMixedWithNoteLinksOnlyDropAttachments() {
+        assertThat(extract("A [[note]] and [[cover.jpg]] together."))
+                .extracting(Link::rawTarget)
+                .containsExactly("note");
+    }
+
+    @Test
+    void unknownExtensionIsKeptAsNoteLink() {
+        // A target like [[v1.5]] has a "extension" of "5" which isn't in the
+        // attachment set — treat it as a note link, not an attachment.
+        assertThat(extract("Version [[v1.5]] notes."))
+                .extracting(Link::rawTarget)
+                .containsExactly("v1.5");
+    }
+
+    @Test
     void ignoresLinksInsideInlineCode() {
         assertThat(extract("`[[not a link]]` — right?")).isEmpty();
     }

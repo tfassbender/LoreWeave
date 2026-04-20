@@ -19,9 +19,9 @@ metadata:
 
 # Kael Varyn
 
-Kael was stationed at [[Location - Karsis Station]] when tensions rose. #pov
-His loyalty to the [[Faction - Outer Union|Union]] is unwavering, though he
-has a personal grudge against [[Character - Rex Morrow]]. #major
+Kael was stationed at [[karsis-station]] when tensions rose. #pov
+His loyalty to the [[outer-union|Union]] is unwavering, though he
+has a personal grudge against [[rex-morrow|Rex]]. #major
 ````
 
 ## Frontmatter fields
@@ -45,7 +45,7 @@ has a personal grudge against [[Character - Rex Morrow]]. #major
 
 | Field | Type | Rule |
 |---|---|---|
-| `aliases` | list of strings | Additional link targets for `[[wiki-links]]`. Not exposed in API responses. |
+| `aliases` | list of strings | Alternate names for the entity. Free-form metadata — **not** used for link resolution; not exposed in API responses. |
 | `metadata` | object | Free-form key/value. Passthrough — the engine does not interpret it. |
 
 ### Other keys
@@ -63,18 +63,20 @@ Any other frontmatter keys are ignored (not an error). Use them freely for your 
 
 ### Links (first-class graph edges)
 
-Only `[[wiki-style]]` links are indexed:
+Only note-to-note `[[wiki-style]]` links are indexed:
 
-- `[[Target]]` — resolved in order: explicit path → alias → basename (case-insensitive).
-- `[[Target|display text]]` — display text ignored for resolution; target is what counts.
-- `[[Target#heading]]` and `[[Target#^block]]` — the fragment is stripped, the note is resolved.
+- `[[Target]]` — resolved in order: explicit vault-relative path → basename (case-insensitive, `.md` suffix optional).
+- `[[Target|display text]]` — display text ignored for resolution; the target is what counts.
+- `[[Target#heading]]` and `[[Target#^block]]` — the fragment is stripped and the link is treated as pointing to the note itself (LoreWeave does not address sub-note locations).
+- When a basename collides (two notes share a filename in different folders), the first one in vault-scan order wins. Disambiguate by writing the full path.
 
-Ignored entirely (no edge produced):
+Ignored entirely (no edge produced, no validation error):
 
 - `![[embed]]` — transclusions are not resolved in v1.
 - `[text](other.md)` — markdown-style links.
 - External URLs (`https://…`).
-- Attachment-style links to images, PDFs, etc.
+- `[[attachment.pdf]]`, `[[image.png]]`, and any other link whose target ends in a known attachment extension (pdf, png/jpg/gif/svg/webp/…, mp3/wav/…, mp4/mov/…, zip/tar/…, canvas). The vault may reference these, but LoreWeave neither indexes them nor flags them as broken links.
+- Aliases declared in frontmatter. They remain as metadata but are not consulted during link resolution — use a basename or vault-relative path instead, typically with a pipe-display for prose: `[[union|the Union]]`.
 
 ### Tags
 
