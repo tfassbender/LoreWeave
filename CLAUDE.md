@@ -80,7 +80,7 @@ Four layers, kept cleanly separated:
 - **Generic core**: the engine does not hardcode narrative-domain types. `character`, `event`, `faction`, etc. are values of `type:`, not special cases.
 - **Tags are inline only**: extracted from `#hashtag` patterns in the body by walking the CommonMark AST (so `#` in code blocks, headings, URL fragments, and wiki-link heading fragments is naturally ignored). There is **no** YAML `tags:` field.
 - **Folders carry no semantic meaning**: the vault can be organized however the user likes. `type` comes from frontmatter, never folder path.
-- **AI-first responses**: structured JSON, size-limited, no raw file exposure without a metadata wrapper. Respect `doc/open_api_spec.md` §6 limits (max 10 search results, max 20 related nodes, default graph depth 1, max depth 2).
+- **AI-first responses**: structured JSON, size-limited, no raw file exposure without a metadata wrapper. Respect `doc/open_api_spec.md` §6 limits (max 10 search results, max 20 related nodes, default graph depth 2, max depth 5).
 
 ## API Surface
 

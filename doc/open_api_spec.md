@@ -159,7 +159,7 @@ Returns graph neighbors (links + backlinks).
 ### Query Parameters
 
 - `path` (string, required)
-- `depth` (int, optional, default: 1, max: 2)
+- `depth` (int, optional, default: 2, max: 5)
 - `limit` (int, optional, default: 10, max: 20)
 
 ### Response
@@ -244,7 +244,8 @@ Canonical codes: `UNAUTHORIZED`, `NOTE_NOT_FOUND`, `SYNC_FAILED`, `INVALID_REQUE
 
 - Maximum search results: 10
 - Maximum related nodes: 20
-- Default graph depth: 1
+- Default graph depth: 2
+- Maximum graph depth: 5
 - Full note retrieval only via `/note`
 
 ---

@@ -92,18 +92,19 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 
 **Exit criteria**: all five spec'd endpoints work behind the bearer-token filter, return the canonical error envelope, and produce a generated OpenAPI document.
 
-- [ ] `BearerTokenFilter` (`ContainerRequestFilter`); skip for `/health` and `/q/*` dev-UI paths
-- [ ] `loreweave.auth.token` config key, read at startup
-- [ ] `ErrorMapper` producing `{ "error": { "code", "message", "details" } }`; covers uncaught exceptions and typed `LoreWeaveException` variants
-- [ ] Error codes: `UNAUTHORIZED`, `NOTE_NOT_FOUND`, `SYNC_FAILED`, `INVALID_REQUEST`
-- [ ] `GET /search?q&type&limit` — weighted substring scoring (title 10, alias 8, tag 6, summary 4, content 1), limit capped at 10
-- [ ] `GET /note?path` — full note including `links` and `backlinks`; 404 when missing. `path` is the vault-relative path (case-insensitive, `.md` optional).
-- [ ] `GET /related?path&depth&limit` — BFS over forward + backward edges, depth defaults to 1, max 2, limit capped at 20
-- [ ] `POST /sync` — triggers `SyncService`; returns 500 with `SYNC_FAILED` on git failure
-- [ ] `GET /health` — public; returns status, index stats, `ValidationReport` summary, and last-sync info
-- [ ] `@OpenAPIDefinition` metadata and annotations on each resource
-- [ ] Verify `/q/openapi` renders correctly and is importable as a Custom GPT Action
-- [ ] RestAssured integration tests for success and error paths of each endpoint
+- [x] `BearerTokenFilter` (`ContainerRequestFilter`, `@PreMatching`); skip for `/health` and `/q/*` paths. Uses `@ConfigProperty` rather than the full `LoreWeaveConfig` mapping because @PreMatching filters are instantiated before `@ConfigMapping` synthetic beans. Constant-time token compare.
+- [x] `loreweave.auth.token` config key, read at startup (fail-closed when blank)
+- [x] `ErrorMapper` producing `{ "error": { "code", "message", "details" } }`; covers `LoreWeaveException` subclasses, `GitSyncException`, `SyncInProgressException`, `WebApplicationException`, and anything uncaught
+- [x] Error codes: `UNAUTHORIZED`, `NOTE_NOT_FOUND`, `SYNC_FAILED`, `INVALID_REQUEST`, plus two added for specific states: `SYNC_IN_PROGRESS` (409) and `INTERNAL_ERROR` (500). The latter two weren't in the plan's original list; flagged here because the API spec will need to list them too.
+- [x] `GET /search?q&type&limit` — weighted substring scoring (title 10, alias 8, tag 6, summary 4, content 1), limit capped at 10. Ties broken by title asc, then by note key for determinism.
+- [x] `GET /note?path` — full note including resolved `links` and `backlinks`; 404 when missing. `path` is the vault-relative path (case-insensitive, `.md` optional). Unresolved links are **not** included in the response — they appear only in `/health`'s validation report.
+- [x] `GET /related?path&depth&limit` — BFS over resolved forward + backward edges, depth defaults to 2, max 5, limit capped at 20 (bumped from the plan's original max-2 at review time; vaults are small enough that five hops is cheap)
+- [x] `POST /sync` — triggers `SyncService.syncNow()`; returns 500 `SYNC_FAILED` on git failure, 409 `SYNC_IN_PROGRESS` if another sync is in flight
+- [x] `GET /health` — public; returns status, index stats, `ValidationReport` breakdown (errors + warnings, up to 5 sample paths each), and last-sync info
+- [x] `@OpenAPIDefinition` metadata on `LoreWeaveApi` (plain annotation host — not an `Application` subclass, which interferes with CDI bean discovery) + `@Tag` / `@Operation` / `@Parameter` on each resource
+- [x] Verified `/q/openapi` renders with all four endpoints and the bearer-token security scheme (smoke-tested on a booted fast-jar)
+- [x] RestAssured integration tests: 19 new @QuarkusTest methods across 5 resource test classes, plus 11 plain JUnit tests for SearchService and RelatedService — 92 tests passing total
+- [x] Removed the Phase-1 `/ping` smoke resource and its test (the real API has landed)
 
 ---
 
