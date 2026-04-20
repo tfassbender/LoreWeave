@@ -12,13 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 class NoteAssemblerTest {
 
     private final NoteAssembler assembler = new NoteAssembler();
-    private final Path file = Path.of("character_kael_varyn.md");
+    private final Path file = Path.of("characters", "kael.md");
 
     @Test
     void assemblesHappyPath() {
         String raw = """
                 ---
-                id: character_kael_varyn
                 type: character
                 title: Kael Varyn
                 summary: Outer Union scout.
@@ -28,14 +27,13 @@ class NoteAssemblerTest {
                   faction: outer_union
                 ---
 
-                Kael was stationed at [[Location - Karsis Station]]. #pov
-                Loyal to the [[Faction - Outer Union|Union]]. #major
+                Kael was stationed at [[locations/karsis]]. #pov
+                Loyal to the [[union|Union]]. #major
                 """;
         ParseResult result = assembler.assemble(file, raw);
         assertThat(result).isInstanceOf(ParseResult.Success.class);
         var success = (ParseResult.Success) result;
         assertThat(success.issues()).isEmpty();
-        assertThat(success.note().id()).isEqualTo("character_kael_varyn");
         assertThat(success.note().type()).isEqualTo("character");
         assertThat(success.note().title()).isEqualTo("Kael Varyn");
         assertThat(success.note().schemaVersion()).isEqualTo(1);
@@ -43,11 +41,13 @@ class NoteAssemblerTest {
         assertThat(success.note().metadata()).containsEntry("faction", "outer_union");
         assertThat(success.note().tags()).containsExactly("pov", "major");
         assertThat(success.note().links()).extracting(Link::rawTarget)
-                .containsExactly("Location - Karsis Station", "Faction - Outer Union");
+                .containsExactly("locations/karsis", "union");
+        assertThat(success.note().sourcePath()).isEqualTo(file);
+        assertThat(success.note().key()).isEqualTo("characters/kael");
     }
 
     @Test
-    void missingIdAndTypeFail() {
+    void missingTypeFails() {
         String raw = """
                 ---
                 title: Orphan
@@ -63,25 +63,9 @@ class NoteAssemblerTest {
     }
 
     @Test
-    void mismatchedIdPrefixIsInvalidIdFormat() {
-        String raw = """
-                ---
-                id: event_kael
-                type: character
-                ---
-                """;
-        ParseResult result = assembler.assemble(file, raw);
-        assertThat(result).isInstanceOf(ParseResult.Failure.class);
-        assertThat(result.issues())
-                .extracting(ValidationIssue::category)
-                .contains(ValidationCategory.INVALID_ID_FORMAT);
-    }
-
-    @Test
     void missingRecommendedFieldsSurfaceAsWarningsNotErrors() {
         String raw = """
                 ---
-                id: character_kael
                 type: character
                 ---
 
@@ -97,7 +81,7 @@ class NoteAssemblerTest {
                         ValidationCategory.MISSING_SCHEMA_VERSION);
         var success = (ParseResult.Success) result;
         // Title falls back to the filename without .md.
-        assertThat(success.note().title()).isEqualTo("character_kael_varyn");
+        assertThat(success.note().title()).isEqualTo("kael");
         assertThat(success.note().schemaVersion()).isEqualTo(1);
     }
 
@@ -105,7 +89,7 @@ class NoteAssemblerTest {
     void malformedYamlIsParseError() {
         String raw = """
                 ---
-                id: [unterminated
+                type: [unterminated
                 ---
 
                 Body.
@@ -118,22 +102,17 @@ class NoteAssemblerTest {
     }
 
     @Test
-    void idDerivedTitleWhenFilenameAbsent() {
-        // Use a path whose filename can't provide a title (just a bare name, no parent dir).
+    void keyIsDerivedFromSourcePathAndPortableAcrossSeparators() {
         String raw = """
                 ---
-                id: character_kael_varyn
                 type: character
-                summary: x
+                title: K
+                summary: s
                 schema_version: 1
                 ---
-
-                Body.
                 """;
-        // Filename = "character_kael_varyn" per fallback chain; not ID-derived here.
-        ParseResult result = assembler.assemble(Path.of("character_kael_varyn.md"), raw);
-        assertThat(result).isInstanceOf(ParseResult.Success.class);
-        var success = (ParseResult.Success) result;
-        assertThat(success.note().title()).isEqualTo("character_kael_varyn");
+        ParseResult winRes = assembler.assemble(Path.of("characters", "kael.md"), raw);
+        assertThat(winRes).isInstanceOf(ParseResult.Success.class);
+        assertThat(((ParseResult.Success) winRes).note().key()).isEqualTo("characters/kael");
     }
 }

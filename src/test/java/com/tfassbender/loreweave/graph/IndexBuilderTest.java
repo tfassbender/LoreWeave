@@ -18,28 +18,27 @@ class IndexBuilderTest {
         Index index = builder.build(Path.of("src/test/resources/vault-valid").toAbsolutePath());
 
         assertThat(index.size()).isEqualTo(4);
-        assertThat(index.notesById().keySet()).containsExactlyInAnyOrder(
-                "character_kael_varyn",
-                "character_rex_morrow",
-                "location_karsis_station",
-                "faction_outer_union");
+        assertThat(index.notesByKey().keySet()).containsExactlyInAnyOrder(
+                "characters/kael",
+                "characters/rex",
+                "locations/karsis",
+                "factions/union");
 
-        IndexedNote kael = index.get("character_kael_varyn").orElseThrow();
+        IndexedNote kael = index.get("characters/kael").orElseThrow();
+        assertThat(kael.resolvedLinks()).allMatch(ResolvedLink::isResolved);
         assertThat(kael.resolvedLinks())
-                .allMatch(ResolvedLink::isResolved);
-        assertThat(kael.resolvedLinks())
-                .extracting(rl -> rl.targetId().orElse(""))
-                .containsExactly("location_karsis_station", "faction_outer_union", "character_rex_morrow");
+                .extracting(rl -> rl.targetKey().orElse(""))
+                .containsExactly("locations/karsis", "factions/union", "characters/rex");
 
         // Backlinks: rex links to kael, so kael has a backlink from rex.
         assertThat(kael.backlinks())
-                .extracting(Backlink::sourceNoteId)
-                .containsExactly("character_rex_morrow");
+                .extracting(Backlink::sourceKey)
+                .containsExactly("characters/rex");
 
-        IndexedNote union = index.get("faction_outer_union").orElseThrow();
+        IndexedNote union = index.get("factions/union").orElseThrow();
         assertThat(union.backlinks())
-                .extracting(Backlink::sourceNoteId)
-                .containsExactlyInAnyOrder("character_kael_varyn", "character_rex_morrow");
+                .extracting(Backlink::sourceKey)
+                .containsExactlyInAnyOrder("characters/kael", "characters/rex");
 
         // No errors, no warnings on the valid fixture.
         assertThat(index.report().totalErrors()).isZero();
@@ -50,12 +49,9 @@ class IndexBuilderTest {
     void invalidFixtureProducesEveryValidationCategory() {
         Index index = builder.build(Path.of("src/test/resources/vault-invalid").toAbsolutePath());
 
-        // Error categories — every one should fire at least once.
+        // Error categories — each remaining one fires at least once.
         assertThat(index.report().stats(ValidationCategory.PARSE_ERRORS).count()).isGreaterThanOrEqualTo(1);
         assertThat(index.report().stats(ValidationCategory.MISSING_REQUIRED_FIELDS).count()).isGreaterThanOrEqualTo(1);
-        assertThat(index.report().stats(ValidationCategory.INVALID_ID_FORMAT).count()).isGreaterThanOrEqualTo(1);
-        // Both dup_a.md and dup_b.md produce a duplicate_ids issue.
-        assertThat(index.report().stats(ValidationCategory.DUPLICATE_IDS).count()).isEqualTo(2);
         assertThat(index.report().stats(ValidationCategory.UNRESOLVED_LINKS).count()).isGreaterThanOrEqualTo(1);
 
         // Warning categories — each of the 'no_*' fixtures fires its category.
@@ -65,19 +61,15 @@ class IndexBuilderTest {
     }
 
     @Test
-    void invalidFixtureExcludesErroredAndDuplicateNotesFromServedIndex() {
+    void invalidFixtureExcludesErroredNotesButServesWarningOnlyNotes() {
         Index index = builder.build(Path.of("src/test/resources/vault-invalid").toAbsolutePath());
 
-        Set<String> servedIds = index.notesById().keySet();
+        Set<String> servedKeys = index.notesByKey().keySet();
 
-        // Error notes must not appear in the served index.
-        assertThat(servedIds).doesNotContain("character_dup"); // both duplicates are excluded
-        // Warning-only notes remain.
-        assertThat(servedIds).contains(
-                "character_titleless",
-                "character_summaryless",
-                "character_schemaless",
-                "character_linker"); // the unresolved-link note itself is served
+        // Error notes (missing_type.md, bad_yaml.md) must not appear.
+        assertThat(servedKeys).doesNotContain("missing_type", "bad_yaml");
+        // Warning-only notes remain. The unresolved-link note itself is still served.
+        assertThat(servedKeys).contains("no_title", "no_summary", "no_schema", "unresolved");
     }
 
     @Test
@@ -92,5 +84,13 @@ class IndexBuilderTest {
         ValidationReport report = rb.build();
         assertThat(report.stats(ValidationCategory.PARSE_ERRORS).count()).isEqualTo(7);
         assertThat(report.stats(ValidationCategory.PARSE_ERRORS).samples()).hasSize(ValidationReport.MAX_SAMPLES);
+    }
+
+    @Test
+    void lookupByRawPathNormalizes() {
+        Index index = builder.build(Path.of("src/test/resources/vault-valid").toAbsolutePath());
+        // Case and .md-suffix variations both resolve via the convenience accessor.
+        assertThat(index.getByPath("Characters/Kael.MD")).isPresent();
+        assertThat(index.getByPath(Path.of("characters", "kael.md"))).isPresent();
     }
 }

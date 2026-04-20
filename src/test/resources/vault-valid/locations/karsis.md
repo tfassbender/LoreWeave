@@ -1,5 +1,4 @@
 ---
-id: location_karsis_station
 type: location
 title: Karsis Station
 summary: Frontier outpost on the Outer Rim.

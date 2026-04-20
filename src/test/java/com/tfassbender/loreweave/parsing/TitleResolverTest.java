@@ -10,29 +10,29 @@ class TitleResolverTest {
 
     @Test
     void usesFrontmatterTitleWhenPresent() {
-        TitleResolver.Resolved r = resolver.resolve("Kael Varyn", "character_kael_varyn", "character_kael_varyn");
+        TitleResolver.Resolved r = resolver.resolve("Kael Varyn", "kael");
         assertThat(r.title()).isEqualTo("Kael Varyn");
         assertThat(r.missingTitleWarning()).isFalse();
     }
 
     @Test
     void fallsBackToFilenameAndWarns() {
-        TitleResolver.Resolved r = resolver.resolve(null, "Kael Varyn", "character_kael_varyn");
-        assertThat(r.title()).isEqualTo("Kael Varyn");
-        assertThat(r.missingTitleWarning()).isTrue();
-    }
-
-    @Test
-    void derivesFromIdWhenFilenameAlsoAbsent() {
-        TitleResolver.Resolved r = resolver.resolve(null, null, "character_kael_varyn");
-        assertThat(r.title()).isEqualTo("Kael Varyn");
+        TitleResolver.Resolved r = resolver.resolve(null, "kael");
+        assertThat(r.title()).isEqualTo("kael");
         assertThat(r.missingTitleWarning()).isTrue();
     }
 
     @Test
     void blankFrontmatterTitleIsTreatedAsAbsent() {
-        TitleResolver.Resolved r = resolver.resolve("  ", "fallback", "character_x");
+        TitleResolver.Resolved r = resolver.resolve("  ", "fallback");
         assertThat(r.title()).isEqualTo("fallback");
+        assertThat(r.missingTitleWarning()).isTrue();
+    }
+
+    @Test
+    void emptyFallbackYieldsEmptyTitleAndWarning() {
+        TitleResolver.Resolved r = resolver.resolve(null, null);
+        assertThat(r.title()).isEmpty();
         assertThat(r.missingTitleWarning()).isTrue();
     }
 }

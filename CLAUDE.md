@@ -35,6 +35,16 @@ Machine-specific settings go in `application-local.properties` (git-ignored); se
 
 A REST API that turns a Git-backed Obsidian vault of markdown notes into a queryable knowledge graph, for consumption by AI agents (primarily Custom GPT Actions). The initial domain is narrative world-building (characters, events, locations, factions, rules), but the core engine is deliberately domain-agnostic — types are values of the `type:` field, not special cases in code.
 
+## Obsidian-first (core design rule)
+
+LoreWeave is a **thin query layer** over an Obsidian-managed vault — not a reimplementation of Obsidian. The rule: **use what Obsidian already provides; do not invent parallel mechanisms.**
+
+- Obsidian gives every file a unique, stable handle (the vault-relative path) and keeps `[[wiki-links]]` consistent on rename/move via *Settings → Files & Links → Automatically update internal links* (on by default). We use the path as the internal handle — **no separate `id` field**.
+- Tags, aliases, backlinks, graph view, search — Obsidian already has them. Where LoreWeave needs them, it reads them (tags, aliases) or derives them deterministically (backlinks). It doesn't add rival syntaxes.
+- If during implementation you find we're about to build something Obsidian already solves, **flag it and propose dropping our version before writing the code**. The principle is more important than a cleaner REST contract.
+
+What LoreWeave *does* add (because Obsidian exposes no API for it): the REST endpoints, git sync, server-side validation for headless agents. Those are new capabilities, not parallels.
+
 ## Tech Stack (summary)
 
 Full detail in `doc/tech_stack.md`. In short:
@@ -62,7 +72,7 @@ Four layers, kept cleanly separated:
 
 ### Hard invariants — don't break these without a design discussion
 
-- **Notes are the unit**: one `.md` file = one entity. ID is explicit in frontmatter, must match `^[a-z][a-z0-9]*_[a-z0-9_]+$`, and the prefix must equal the `type:` value. No path-based lookups anywhere.
+- **Notes are the unit**: one `.md` file = one entity. The **vault-relative path** (normalized: forward slashes, case-insensitive, `.md` suffix optional) is the note's stable handle — Obsidian keeps `[[wiki-links]]` pointing at that path correct on rename/move. The `type:` frontmatter field classifies a note but is not part of the handle. There is **no** separate `id` field.
 - **Backlinks are computed, not stored**: derived from forward links on every full rebuild. Any change to link extraction must be consistent across a rebuild.
 - **In-memory only in v1**: no persistent cache, no database. A sync wipes and rebuilds.
 - **Atomic index swap**: the index is held behind a `volatile` reference and swapped only after a successful rebuild. Readers always see a consistent snapshot. `/sync` is serialized via a single-permit semaphore.
@@ -76,9 +86,9 @@ Four layers, kept cleanly separated:
 
 Full contract in `doc/open_api_spec.md`. Summary:
 
-- `GET /search?q=&type=&limit=` — keyword search; weighted substring scoring (title > alias > tag > summary > content); returns summaries + score, no full content
-- `GET /note?id=` — full note including `links` and `backlinks`
-- `GET /related?id=&depth=&limit=` — graph neighbors via BFS
+- `GET /search?q=&type=&limit=` — keyword search; weighted substring scoring (title > alias > tag > summary > content); returns summaries + score, no full content. Hits are identified by their `path`.
+- `GET /note?path=` — full note including `links` and `backlinks`. `path` is the vault-relative path (normalized forward-slash, `.md` suffix optional).
+- `GET /related?path=&depth=&limit=` — graph neighbors via BFS, seeded by `path`.
 - `POST /sync` — git pull + rebuild; `500` / `SYNC_FAILED` on git failure
 - `GET /health` — public (no auth); returns status, index stats, validation report summary, last-sync info
 
@@ -92,13 +102,13 @@ Full rules and examples in `doc/vault_schema.md`.
 
 | Frontmatter                      | Fields                               |
 |----------------------------------|--------------------------------------|
-| Required (hard error if missing) | `id`, `type`                         |
+| Required (hard error if missing) | `type`                               |
 | Recommended (warning if missing) | `title`, `summary`, `schema_version` |
 | Optional                         | `aliases`, `metadata`                |
 
 - Body links: `[[wiki-style]]` only — markdown links and `![[embeds]]` are ignored. Fragments (`#heading`, `#^block`) and pipe-display (`|display`) are stripped before resolution.
 - Link resolution order: **full path → basename** (case-insensitive, `.md` optional). Aliases declared in frontmatter are kept as metadata but are **not** used for link resolution. Wiki-links whose target has a known attachment extension (`.pdf`, `.png`, `.mp3`, …) are silently dropped at extraction time — they never reach the graph and never raise `unresolved_links`.
-- Title fallback chain: `title:` → filename without `.md` → ID-derived.
+- Title fallback chain: `title:` → filename without `.md`.
 - Tags: inline `#hashtag` only, extracted via AST walk, lowercased, deduped.
 
 ### Validation categories (all surfaced in `/health`)
@@ -106,9 +116,7 @@ Full rules and examples in `doc/vault_schema.md`.
 Errors — note is excluded from the served index:
 
 - `parse_errors`
-- `missing_required_fields`
-- `invalid_id_format`
-- `duplicate_ids`
+- `missing_required_fields` (currently only `type`)
 - `unresolved_links`
 
 Warnings — note is served but incomplete:

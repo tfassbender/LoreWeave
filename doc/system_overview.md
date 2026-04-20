@@ -12,9 +12,10 @@ LoreWeave treats a collection of markdown files as a **graph-based knowledge sys
 
 Key principles:
 - Each note represents a single entity (e.g. character, event, location, rule)
-- Notes are uniquely identified via a strict ID system
+- Notes are addressed by their **vault-relative path** — the same handle Obsidian uses and keeps consistent across rename/move
 - Relationships between notes are first-class citizens
 - The system exposes structured access to content via a REST API
+- **LoreWeave is a thin layer over Obsidian** — it uses what Obsidian already provides (path-based identity, auto-updated links, tags, aliases) rather than introducing parallel mechanisms
 
 ---
 
@@ -44,20 +45,20 @@ The system consists of four main layers:
 ## 4. Data Model
 Each note is represented internally as a structured entity:
 
-- id (string, unique)
+- path (vault-relative, normalized — the stable lookup handle)
 - title (string)
 - type (string: character, event, location, faction, rule, etc.)
 - content (markdown text)
 - summary (optional but recommended)
 - tags (list of strings)
 - metadata (flexible key-value object)
-- links (outgoing relationships)
-- backlinks (incoming relationships)
+- links (outgoing relationships, target is a `path`)
+- backlinks (incoming relationships, source is a `path`)
 
-### ID System
-- Strict, deterministic IDs
-- Format: `type_name_identifier`
-- Example: `character_kael_varyn`
+### Note identity
+- The vault-relative path is the note's stable handle — no separate `id` field.
+- Normalization: lowercase, forward slashes, `.md` suffix optional.
+- Obsidian ensures the path stays consistent across rename/move (*Settings → Files & Links → Automatically update internal links*). Using the path as the handle lets LoreWeave inherit that guarantee instead of building a parallel identity system.
 
 ---
 
@@ -66,10 +67,12 @@ LoreWeave builds a bidirectional graph from Obsidian-style links.
 
 ### Forward Links
 Extracted from markdown:
-- [[Character - Kael Varyn]]
+- `[[characters/kael]]` (vault-relative path)
+- `[[kael]]` (basename, resolved case-insensitively)
+- `[[characters/kael|Kael]]` (pipe-display for prose)
 
 Stored as structured references:
-- target_id
+- target_path
 - target_title
 - type
 
@@ -120,9 +123,9 @@ Automatically computed reverse relationships:
 
 ## 8. Validation Layer
 A lightweight validation system ensures consistency:
-- All links must resolve to valid IDs
-- Required fields (id, type, content) must exist
-- Schema version must be present in each note
+- All `[[wiki-links]]` must resolve to a note in the served index
+- Required frontmatter: `type` (the filesystem path already provides identity; no separate `id` field)
+- Schema version should be present in each note (warning if missing)
 
 Errors are returned in structured format for AI-friendly handling.
 

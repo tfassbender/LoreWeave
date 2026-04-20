@@ -12,8 +12,9 @@ import java.util.Map;
 
 /**
  * Composes the per-file parse pipeline into a {@link ParseResult}. Collects
- * errors and warnings along the way. Does not resolve links or detect duplicate
- * IDs — those require the global vault and belong to phase 3.
+ * errors and warnings along the way. Forward links are emitted unresolved;
+ * resolution to target notes happens in the index builder, which has the
+ * global vault context this class intentionally doesn't.
  */
 public final class NoteAssembler {
 
@@ -22,25 +23,22 @@ public final class NoteAssembler {
     private final WikiLinkExtractor wikiLinkExtractor;
     private final HashtagExtractor hashtagExtractor;
     private final TitleResolver titleResolver;
-    private final IdValidator idValidator;
 
     public NoteAssembler() {
         this(new FrontmatterParser(), new MarkdownBodyParser(), new WikiLinkExtractor(),
-                new HashtagExtractor(), new TitleResolver(), new IdValidator());
+                new HashtagExtractor(), new TitleResolver());
     }
 
     public NoteAssembler(FrontmatterParser frontmatterParser,
                          MarkdownBodyParser bodyParser,
                          WikiLinkExtractor wikiLinkExtractor,
                          HashtagExtractor hashtagExtractor,
-                         TitleResolver titleResolver,
-                         IdValidator idValidator) {
+                         TitleResolver titleResolver) {
         this.frontmatterParser = frontmatterParser;
         this.bodyParser = bodyParser;
         this.wikiLinkExtractor = wikiLinkExtractor;
         this.hashtagExtractor = hashtagExtractor;
         this.titleResolver = titleResolver;
-        this.idValidator = idValidator;
     }
 
     public ParseResult assemble(Path sourcePath, String rawContent) {
@@ -54,26 +52,11 @@ public final class NoteAssembler {
         }
 
         Map<String, Object> fm = parsed.fields();
-        String id = asString(fm.get("id"));
         String type = asString(fm.get("type"));
 
-        if (id == null || id.isBlank()) {
-            issues.add(ValidationIssue.error(ValidationCategory.MISSING_REQUIRED_FIELDS, sourcePath,
-                    "required field 'id' is missing"));
-        }
         if (type == null || type.isBlank()) {
             issues.add(ValidationIssue.error(ValidationCategory.MISSING_REQUIRED_FIELDS, sourcePath,
                     "required field 'type' is missing"));
-        }
-        if (id != null && type != null && !id.isBlank() && !type.isBlank()) {
-            IdValidator.Result r = idValidator.validate(id, type);
-            if (!r.valid()) {
-                issues.add(ValidationIssue.error(ValidationCategory.INVALID_ID_FORMAT, sourcePath, r.message()));
-            }
-        }
-
-        // If we don't have both id and type, there's no useful Note to assemble.
-        if (issues.stream().anyMatch(ValidationIssue::isError)) {
             return new ParseResult.Failure(issues);
         }
 
@@ -84,7 +67,7 @@ public final class NoteAssembler {
         Map<String, Object> metadata = asMap(fm.get("metadata"));
 
         String filenameWithoutExt = filenameWithoutExt(sourcePath);
-        TitleResolver.Resolved title = titleResolver.resolve(fmTitle, filenameWithoutExt, id);
+        TitleResolver.Resolved title = titleResolver.resolve(fmTitle, filenameWithoutExt);
         if (title.missingTitleWarning()) {
             issues.add(ValidationIssue.warning(ValidationCategory.MISSING_TITLE, sourcePath,
                     "no 'title' field; resolved to '" + title.title() + "'"));
@@ -104,7 +87,7 @@ public final class NoteAssembler {
         List<String> tags = hashtagExtractor.extract(ast);
 
         Note note = new Note(
-                id, type, title.title(),
+                type, title.title(),
                 fmSummary == null ? "" : fmSummary,
                 schemaVersion,
                 aliases, metadata, split.body(), links, tags, sourcePath);
@@ -137,7 +120,6 @@ public final class NoteAssembler {
         return List.of(String.valueOf(o));
     }
 
-    @SuppressWarnings("unchecked")
     private static Map<String, Object> asMap(Object o) {
         if (o instanceof Map<?, ?> m) {
             Map<String, Object> out = new java.util.LinkedHashMap<>();

@@ -1,16 +1,19 @@
 package com.tfassbender.loreweave.domain;
 
 /**
- * Categories surfaced by the {@code /health} endpoint. The first five are errors
- * (the note is excluded from the served index); the last three are warnings (the
- * note is served but incomplete).
+ * Categories surfaced by the {@code /health} endpoint. The first three are
+ * errors (the note is excluded from the served index); the last three are
+ * warnings (the note is served but incomplete).
+ *
+ * <p>Note-identity validation categories like {@code invalid_id_format} and
+ * {@code duplicate_ids} don't exist because LoreWeave uses the vault-relative
+ * path as a note's handle — the filesystem guarantees uniqueness and Obsidian
+ * keeps {@code [[wiki-links]]} consistent across moves.
  */
 public enum ValidationCategory {
     // Errors
     PARSE_ERRORS,
     MISSING_REQUIRED_FIELDS,
-    INVALID_ID_FORMAT,
-    DUPLICATE_IDS,
     UNRESOLVED_LINKS,
 
     // Warnings

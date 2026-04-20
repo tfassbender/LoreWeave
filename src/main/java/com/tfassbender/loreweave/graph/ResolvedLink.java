@@ -6,16 +6,17 @@ import java.util.Optional;
 
 /**
  * A {@link Link} paired with the outcome of resolving it against the served
- * index. {@code targetId} is present iff resolution succeeded.
+ * index. {@code targetKey} is present iff resolution succeeded; its value is
+ * the normalized path handle of the target note.
  */
-public record ResolvedLink(Link link, Optional<String> targetId) {
+public record ResolvedLink(Link link, Optional<String> targetKey) {
 
     public ResolvedLink {
         if (link == null) throw new IllegalArgumentException("link is required");
-        if (targetId == null) targetId = Optional.empty();
+        if (targetKey == null) targetKey = Optional.empty();
     }
 
     public boolean isResolved() {
-        return targetId.isPresent();
+        return targetKey.isPresent();
     }
 }

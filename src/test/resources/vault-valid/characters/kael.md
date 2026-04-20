@@ -1,5 +1,4 @@
 ---
-id: character_kael_varyn
 type: character
 title: Kael Varyn
 summary: Outer Union scout, POV of the Karsis arc.

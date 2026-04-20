@@ -1,5 +1,4 @@
 ---
-id: character_rex_morrow
 type: character
 title: Rex Morrow
 summary: Inner Union enforcer, antagonist of the Karsis arc.

@@ -1,17 +1,19 @@
 package com.tfassbender.loreweave.domain;
 
 /**
- * An incoming link to a note, computed on index build from the forward links of
- * every other note. Phase 2 defines the type; phase 3 populates it.
+ * An incoming link to a note, computed on index build from the forward links
+ * of every other note.
  *
- * @param sourceNoteId the ID of the note that links to us
- * @param displayText  the pipe-display text used at the link site, or {@code null}
+ * @param sourceKey    the normalized path key of the note that links to us
+ *                     (see {@link NoteKey})
+ * @param displayText  the pipe-display text used at the link site, or
+ *                     {@code null} if absent
  */
-public record Backlink(String sourceNoteId, String displayText) {
+public record Backlink(String sourceKey, String displayText) {
 
     public Backlink {
-        if (sourceNoteId == null || sourceNoteId.isBlank()) {
-            throw new IllegalArgumentException("sourceNoteId must be non-blank");
+        if (sourceKey == null || sourceKey.isBlank()) {
+            throw new IllegalArgumentException("sourceKey must be non-blank");
         }
     }
 }

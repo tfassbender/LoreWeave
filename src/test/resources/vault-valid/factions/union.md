@@ -1,5 +1,4 @@
 ---
-id: faction_outer_union
 type: faction
 title: The Outer Union
 summary: A loose coalition of frontier worlds.

@@ -31,29 +31,36 @@ Authorization: Bearer <token>
 
 # 3. Core Data Model
 
-## Note (Base Entity)
+## Note handle
+
+Every note is addressed by its **`path`** — the vault-relative path, normalized to forward slashes, lowercased, with the `.md` suffix optional. Example: `characters/kael`. This is the same handle Obsidian uses internally; renaming or moving a note inside Obsidian updates `[[wiki-links]]` automatically (*Settings → Files & Links → Automatically update internal links*), so paths stay consistent across edits. There is no separate `id` field.
+
+## Note (base entity)
 
 ```json
 {
-  "id": "string",
-  "title": "string",
-  "type": "string",
-  "summary": "string",
-  "tags": ["string"],
-  "content": "string (markdown)",
-  "metadata": {},
+  "path": "characters/kael",
+  "title": "Kael Varyn",
+  "type": "character",
+  "summary": "Scout of the Outer Union.",
+  "tags": ["pov", "major"],
+  "content": "# Kael Varyn\n...",
+  "metadata": {
+    "faction": "outer_union",
+    "status": "active"
+  },
   "links": [
     {
-      "target_id": "string",
-      "title": "string",
-      "type": "string"
+      "target_path": "events/border-incident",
+      "title": "Border Incident",
+      "type": "event"
     }
   ],
   "backlinks": [
     {
-      "source_id": "string",
-      "title": "string",
-      "type": "string"
+      "source_path": "events/border-incident",
+      "title": "Border Incident",
+      "type": "event"
     }
   ],
   "schema_version": 1
@@ -76,7 +83,7 @@ Searches notes using keyword matching and optional filtering.
 
 - `q` (string, required)
 - `type` (string, optional)
-- `limit` (int, optional, default: 10)
+- `limit` (int, optional, default: 10, max: 10)
 
 ### Response
 
@@ -84,8 +91,8 @@ Searches notes using keyword matching and optional filtering.
 {
   "results": [
     {
-      "id": "event_border_incident",
-      "title": "Event - Border Incident",
+      "path": "events/border-incident",
+      "title": "Border Incident",
       "type": "event",
       "summary": "Conflict between factions at the border region.",
       "tags": ["war", "border"],
@@ -105,18 +112,18 @@ Returns full structured note including links and backlinks.
 
 ### Query Parameters
 
-- `id` (string, required)
+- `path` (string, required) — the vault-relative path, URL-encoded. `.md` suffix is optional; lookup is case-insensitive.
 
 ### Response
 
 ```json
 {
   "note": {
-    "id": "character_kael_varyn",
-    "title": "Character - Kael Varyn",
+    "path": "characters/kael",
+    "title": "Kael Varyn",
     "type": "character",
     "summary": "Scout of the Outer Union.",
-    "tags": ["military"],
+    "tags": ["pov"],
     "content": "# Kael Varyn\n...",
     "metadata": {
       "faction": "outer_union",
@@ -124,15 +131,15 @@ Returns full structured note including links and backlinks.
     },
     "links": [
       {
-        "target_id": "event_border_incident",
-        "title": "Event - Border Incident",
+        "target_path": "events/border-incident",
+        "title": "Border Incident",
         "type": "event"
       }
     ],
     "backlinks": [
       {
-        "source_id": "event_border_incident",
-        "title": "Event - Border Incident",
+        "source_path": "events/border-incident",
+        "title": "Border Incident",
         "type": "event"
       }
     ],
@@ -151,25 +158,25 @@ Returns graph neighbors (links + backlinks).
 
 ### Query Parameters
 
-- `id` (string, required)
+- `path` (string, required)
 - `depth` (int, optional, default: 1, max: 2)
-- `limit` (int, optional, default: 10)
+- `limit` (int, optional, default: 10, max: 20)
 
 ### Response
 
 ```json
 {
-  "node": "character_kael_varyn",
+  "node": "characters/kael",
   "related": [
     {
-      "id": "event_border_incident",
-      "title": "Event - Border Incident",
+      "path": "events/border-incident",
+      "title": "Border Incident",
       "type": "event",
       "relation": "link"
     },
     {
-      "id": "location_karsis_station",
-      "title": "Location - Karsis Station",
+      "path": "locations/karsis",
+      "title": "Karsis Station",
       "type": "location",
       "relation": "link"
     }
@@ -223,11 +230,13 @@ All errors follow a consistent structure:
 {
   "error": {
     "code": "NOTE_NOT_FOUND",
-    "message": "No note found for id 'xyz'",
+    "message": "No note found for path 'characters/ghost'",
     "details": {}
   }
 }
 ```
+
+Canonical codes: `UNAUTHORIZED`, `NOTE_NOT_FOUND`, `SYNC_FAILED`, `INVALID_REQUEST`.
 
 ---
 
@@ -242,11 +251,11 @@ All errors follow a consistent structure:
 
 # 7. Design Notes
 
-- API is optimized for AI agent consumption
-- Graph structure is first-class (links + backlinks)
-- Notes are strictly ID-based
-- Responses are structured JSON only
-- No raw file exposure without metadata wrapping
+- API is optimized for AI agent consumption.
+- Graph structure is first-class (links + backlinks).
+- Notes are addressed by their **vault-relative path** — the handle Obsidian itself uses and auto-updates on rename/move. No separate `id` field exists.
+- Responses are structured JSON only.
+- No raw file exposure without metadata wrapping.
 
 ---
 

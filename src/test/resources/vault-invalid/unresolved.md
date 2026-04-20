@@ -1,5 +1,4 @@
 ---
-id: character_linker
 type: character
 title: Linker
 summary: Links to a note that does not exist.

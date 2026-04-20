@@ -5,12 +5,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A successfully parsed note. Forward links are unresolved at this stage — they
- * are resolved to target note IDs during index build. Backlinks are not stored
- * on {@link Note}; they are computed and exposed by the {@code Index}.
+ * A successfully parsed note. The note's stable handle is its
+ * {@link #sourcePath} — the vault-relative path — normalized via
+ * {@link NoteKey#of(Path)} for lookups.
+ *
+ * <p>Forward links are unresolved at this stage (raw link text, no target
+ * handle). Resolution happens during index build. Backlinks are not stored on
+ * {@link Note}; they are computed and exposed by the {@code Index}.
  */
 public record Note(
-        String id,
         String type,
         String title,
         String summary,
@@ -27,5 +30,10 @@ public record Note(
         metadata = metadata == null ? Map.of() : Map.copyOf(metadata);
         links = links == null ? List.of() : List.copyOf(links);
         tags = tags == null ? List.of() : List.copyOf(tags);
+    }
+
+    /** The normalized lookup handle for this note (vault-relative path, lowercased, forward-slash, {@code .md}-stripped). */
+    public String key() {
+        return NoteKey.of(sourcePath);
     }
 }

@@ -39,8 +39,8 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 - [x] `MarkdownBodyParser` wrapping commonmark-java, exposing the AST
 - [x] `WikiLinkExtractor` — walks text nodes, emits `[[target]]` tokens, strips `#heading` and `|display`, ignores `![[embed]]`
 - [x] `HashtagExtractor` — walks text nodes, matches `(?<=^|\s)#[A-Za-z0-9_/-]+`, lowercases and dedups (also rejects purely numeric hashes so `#123` issue refs are not treated as tags)
-- [x] `TitleResolver` — frontmatter `title:` → filename without `.md` → ID-derived; returns resolved title plus a flag indicating whether a warning should be raised
-- [x] `IdValidator` — regex `^[a-z][a-z0-9]*_[a-z0-9_]+$`, verifies prefix matches `type:`
+- [x] `TitleResolver` — frontmatter `title:` → filename without `.md`; returns resolved title plus a flag indicating whether a warning should be raised (the original ID-derived fallback was removed when the `id` field was dropped in favor of path-based identity)
+- [x] ~~`IdValidator`~~ — removed. LoreWeave uses the vault-relative path as a note's handle; the filesystem guarantees uniqueness and Obsidian keeps `[[wiki-links]]` consistent across moves.
 - [x] `NoteAssembler` — composes the above into a `ParseResult` (sealed: `Success(Note, warnings)` or `Failure(errors)`)
 - [x] Unit tests for each parser with small fixture strings (40 unit tests across 6 classes; all green)
 
@@ -51,14 +51,14 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 **Exit criteria**: given a vault directory, we produce an in-memory `Index` with backlinks and a complete `ValidationReport`.
 
 - [x] `VaultScanner` — recursive `.md` walk; skip `.git/`, `.obsidian/`, `.trash/`, any dot-prefixed directory (also handles IO read failures as `parse_errors`)
-- [x] `LinkResolver` — resolution order: full path → basename (case-insensitive, `.md` optional); returns `Optional<String>` (target ID). Tie-break on multiple matches: first-inserted wins; callers feed notes sorted by source path for determinism. Aliases are **not** consulted — they're metadata only. `WikiLinkExtractor` also drops links whose target ends in a known attachment extension (pdf/png/mp3/…) so such links neither enter the graph nor raise `unresolved_links`.
+- [x] `LinkResolver` — resolution order: full path → basename (case-insensitive, `.md` optional); returns `Optional<String>` (normalized target key — the target note's vault-relative path). Tie-break on multiple matches: first-inserted wins; callers feed notes sorted by source path for determinism. Aliases are **not** consulted — they're metadata only. `WikiLinkExtractor` also drops links whose target ends in a known attachment extension (pdf/png/mp3/…) so such links neither enter the graph nor raise `unresolved_links`.
 - [x] `IndexBuilder` — assembles `Map<String, IndexedNote>`, builds the resolver over served notes only so links to excluded notes surface as `unresolved_links`
 - [x] Backlink computation pass — inverting resolved forward edges into `Backlink` lists attached to `IndexedNote` (not to `Note` itself, which stays a parseable-in-isolation record)
 - [x] Validation — all categories populated into a `ValidationReport`:
   - [x] `parse_errors`
   - [x] `missing_required_fields`
-  - [x] `invalid_id_format`
-  - [x] `duplicate_ids`
+  - [x] ~~`invalid_id_format`~~ — removed (no `id` field anymore; path is the handle).
+  - [x] ~~`duplicate_ids`~~ — removed (the filesystem prevents duplicate paths).
   - [x] `unresolved_links`
   - [x] `missing_title` (warning)
   - [x] `missing_summary` (warning)
@@ -96,8 +96,8 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 - [ ] `ErrorMapper` producing `{ "error": { "code", "message", "details" } }`; covers uncaught exceptions and typed `LoreWeaveException` variants
 - [ ] Error codes: `UNAUTHORIZED`, `NOTE_NOT_FOUND`, `SYNC_FAILED`, `INVALID_REQUEST`
 - [ ] `GET /search?q&type&limit` — weighted substring scoring (title 10, alias 8, tag 6, summary 4, content 1), limit capped at 10
-- [ ] `GET /note?id` — full note including `links` and `backlinks`; 404 when missing
-- [ ] `GET /related?id&depth&limit` — BFS over forward + backward edges, depth defaults to 1, max 2, limit capped at 20
+- [ ] `GET /note?path` — full note including `links` and `backlinks`; 404 when missing. `path` is the vault-relative path (case-insensitive, `.md` optional).
+- [ ] `GET /related?path&depth&limit` — BFS over forward + backward edges, depth defaults to 1, max 2, limit capped at 20
 - [ ] `POST /sync` — triggers `SyncService`; returns 500 with `SYNC_FAILED` on git failure
 - [ ] `GET /health` — public; returns status, index stats, `ValidationReport` summary, and last-sync info
 - [ ] `@OpenAPIDefinition` metadata and annotations on each resource
@@ -169,7 +169,7 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 
 **Exit criteria**: a new user can read the docs and set up a working vault + API deployment.
 
-- [ ] `doc/authoring_guide.md` — conventions for writing notes: choosing IDs, when to link vs tag, summary style, type taxonomy suggestions
+- [ ] `doc/authoring_guide.md` — conventions for writing notes: folder structure and naming (the path is the handle), when to link vs tag, summary style, type taxonomy suggestions
 - [ ] `doc/deployment.md` — linux server setup, systemd unit, reverse proxy, TLS, secret management
 - [ ] Update `doc/system_overview.md` if implementation revealed any invariant changes
 - [ ] Verify all cross-references between docs are accurate

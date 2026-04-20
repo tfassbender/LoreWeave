@@ -1,6 +1,5 @@
 ---
-id: [unterminated
-type: test
+type: [unterminated
 ---
 
 Body here.

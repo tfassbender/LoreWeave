@@ -2,11 +2,16 @@
 
 This document is the authoritative reference for how to structure notes in a LoreWeave-compatible Obsidian vault. The parser, validator, and API all assume the rules below.
 
+## Note identity — the vault-relative path
+
+Every `.md` file in the vault is one entity. Its **stable handle is its vault-relative path**, normalized to forward slashes, lowercased, with the `.md` suffix optional. `characters/Kael.md` is addressable as `characters/kael`, `characters/kael.md`, `Characters/Kael`, etc.
+
+There is **no** `id` frontmatter field. Obsidian already provides a unique handle (the filesystem path) and keeps `[[wiki-links]]` consistent on rename/move via *Settings → Files & Links → Automatically update internal links*. Introducing a separate `id` would duplicate that machinery and force authors to choose IDs for every note.
+
 ## Example note
 
 ````markdown
 ---
-id: character_kael_varyn
 type: character
 title: Kael Varyn
 summary: Outer Union scout, POV of the Karsis arc.
@@ -19,9 +24,9 @@ metadata:
 
 # Kael Varyn
 
-Kael was stationed at [[karsis-station]] when tensions rose. #pov
-His loyalty to the [[outer-union|Union]] is unwavering, though he
-has a personal grudge against [[rex-morrow|Rex]]. #major
+Kael was stationed at [[locations/karsis]] when tensions rose. #pov
+His loyalty to the [[union|Union]] is unwavering, though he
+has a personal grudge against [[rex|Rex Morrow]]. #major
 ````
 
 ## Frontmatter fields
@@ -30,14 +35,13 @@ has a personal grudge against [[rex-morrow|Rex]]. #major
 
 | Field | Type | Rule |
 |---|---|---|
-| `id` | string | Must match `^[a-z][a-z0-9]*_[a-z0-9_]+$`. Prefix must equal the `type` value. Unique across the vault. |
-| `type` | string | Free-form lowercase string. No closed vocabulary — any value is accepted. |
+| `type` | string | Free-form lowercase string. No closed vocabulary — any value is accepted. Used as a filter in `/search?type=…` and exposed on every note response. |
 
 ### Recommended — warning in `/health` if missing
 
 | Field | Type | Rule |
 |---|---|---|
-| `title` | string | Human-readable display name. Falls back to filename, then to an ID-derived title. |
+| `title` | string | Human-readable display name. Falls back to the filename (without `.md`). |
 | `summary` | string | One or two sentences. Returned in `/search` results — missing summaries degrade search UX. |
 | `schema_version` | integer | Currently `1`. Defaults to `1` if missing; being explicit is preferred. |
 
@@ -51,13 +55,6 @@ has a personal grudge against [[rex-morrow|Rex]]. #major
 ### Other keys
 
 Any other frontmatter keys are ignored (not an error). Use them freely for your own tooling.
-
-## ID conventions
-
-- Format: `{type}_{name}[_{identifier}]` — e.g. `character_kael_varyn`, `event_border_incident`, `location_karsis_station`.
-- Lowercase letters, digits, and underscores only.
-- Must begin with the `type` value followed by `_`.
-- Duplicate IDs across files surface under `duplicate_ids` in `/health`.
 
 ## Body conventions
 
@@ -93,16 +90,15 @@ Precedence:
 
 1. YAML `title:` field
 2. Filename without `.md`
-3. ID-derived — drop the `type_` prefix, replace underscores with spaces, title-case. `character_kael_varyn` → `Kael Varyn`.
 
-Steps 2 and 3 emit a `missing_title` warning in `/health`.
+Step 2 emits a `missing_title` warning in `/health`.
 
 ## File and folder rules
 
 - All `.md` files are indexed recursively from the vault root.
 - Ignored directories: `.git/`, `.obsidian/`, `.trash/`, and anything beginning with `.`.
 - Ignored files: anything not `.md` (images, PDFs, attachments).
-- **Folders carry no semantic meaning.** Structure your vault however feels natural in Obsidian — the `type` value comes from frontmatter, never the folder path.
+- **Folders carry no semantic meaning for classification.** `type` comes from frontmatter, not folder path. Folders *are* however the only disambiguation lever when two notes share a basename — put colliding files in different folders and reference them by full path.
 
 ## Schema versioning
 
@@ -117,10 +113,8 @@ Steps 2 and 3 emit a `missing_title` warning in `/health`.
 **Errors** (the note does not enter the served index):
 
 - `parse_errors` — YAML parse failure or file read failure
-- `missing_required_fields` — `id` or `type` absent
-- `invalid_id_format` — ID regex mismatch, or type prefix doesn't match `type:`
-- `duplicate_ids` — two or more files share an ID
-- `unresolved_links` — a `[[target]]` doesn't match any file's path, alias, or basename
+- `missing_required_fields` — `type` absent
+- `unresolved_links` — a `[[target]]` doesn't match any served note's path or basename
 
 **Warnings** (the note loads and is served, but is incomplete):
 
@@ -128,4 +122,4 @@ Steps 2 and 3 emit a `missing_title` warning in `/health`.
 - `missing_summary`
 - `missing_schema_version`
 
-A note with only warnings is fully usable via the API. A note with errors is **not** served — its ID is absent from the index, and any incoming links to it appear under `unresolved_links` for whoever linked to it.
+A note with only warnings is fully usable via the API. A note with errors is **not** served — it's absent from the index, and any incoming links to it appear under `unresolved_links` for whoever linked to it.

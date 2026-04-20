@@ -11,42 +11,40 @@ class LinkResolverTest {
 
     private LinkResolver buildResolver() {
         return new LinkResolver.Builder()
-                .add("character_kael_varyn", Path.of("characters", "kael.md"))
-                .add("faction_outer_union", Path.of("factions", "union.md"))
-                .add("location_karsis_station", Path.of("locations", "karsis.md"))
+                .add(Path.of("characters", "kael.md"))
+                .add(Path.of("factions", "union.md"))
+                .add(Path.of("locations", "karsis.md"))
                 .build();
     }
 
     @Test
     void resolvesByBasenameCaseInsensitively() {
         LinkResolver r = buildResolver();
-        assertThat(r.resolve(new Link("kael", null, null))).contains("character_kael_varyn");
-        assertThat(r.resolve(new Link("KAEL", null, null))).contains("character_kael_varyn");
+        assertThat(r.resolve(new Link("kael", null, null))).contains("characters/kael");
+        assertThat(r.resolve(new Link("KAEL", null, null))).contains("characters/kael");
     }
 
     @Test
     void resolvesByFullPath() {
         LinkResolver r = buildResolver();
-        assertThat(r.resolve(new Link("locations/karsis", null, null))).contains("location_karsis_station");
-        assertThat(r.resolve(new Link("locations/karsis.md", null, null))).contains("location_karsis_station");
+        assertThat(r.resolve(new Link("locations/karsis", null, null))).contains("locations/karsis");
+        assertThat(r.resolve(new Link("locations/karsis.md", null, null))).contains("locations/karsis");
     }
 
     @Test
     void fullPathTakesPrecedenceOverBasename() {
         LinkResolver r = new LinkResolver.Builder()
-                .add("a_root", Path.of("kael.md"))
-                .add("a_nested", Path.of("characters", "kael.md"))
+                .add(Path.of("kael.md"))
+                .add(Path.of("characters", "kael.md"))
                 .build();
-        // Both have basename 'kael'; first-wins says a_root takes the basename slot.
-        // But a full path to the nested file still resolves to the nested one.
-        assertThat(r.resolve(new Link("characters/kael", null, null))).contains("a_nested");
-        assertThat(r.resolve(new Link("kael", null, null))).contains("a_root");
+        // Both have basename 'kael'; first-wins says the root file takes the basename slot.
+        assertThat(r.resolve(new Link("characters/kael", null, null))).contains("characters/kael");
+        assertThat(r.resolve(new Link("kael", null, null))).contains("kael");
     }
 
     @Test
     void aliasLikeTextDoesNotResolve() {
-        // Aliases are not consulted. A link whose text is not a path or basename
-        // must come back empty, even when it looks like an alternate display name.
+        // Aliases are not consulted. Only path/basename.
         LinkResolver r = buildResolver();
         assertThat(r.resolve(new Link("The Scout", null, null))).isEmpty();
         assertThat(r.resolve(new Link("The Union", null, null))).isEmpty();
@@ -62,17 +60,18 @@ class LinkResolverTest {
     @Test
     void firstInsertedWinsOnBasenameCollision() {
         LinkResolver r = new LinkResolver.Builder()
-                .add("a_first", Path.of("dir1", "note.md"))
-                .add("b_second", Path.of("dir2", "note.md"))
+                .add(Path.of("dir1", "note.md"))
+                .add(Path.of("dir2", "note.md"))
                 .build();
-        assertThat(r.resolve(new Link("note", null, null))).contains("a_first");
+        assertThat(r.resolve(new Link("note", null, null))).contains("dir1/note");
     }
 
     @Test
-    void missingRelativePathIsNoOp() {
+    void backslashPathsNormalizedToForwardSlash() {
         LinkResolver r = new LinkResolver.Builder()
-                .add("no_path", null)
+                .add(Path.of("characters", "kael.md"))
                 .build();
-        assertThat(r.resolve(new Link("no_path", null, null))).isEmpty();
+        // A link written with Windows separators still resolves.
+        assertThat(r.resolve(new Link("characters\\kael", null, null))).contains("characters/kael");
     }
 }
