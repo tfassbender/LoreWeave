@@ -34,15 +34,15 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 
 **Exit criteria**: given a single markdown file string, we can produce a parsed `Note` plus per-file warnings.
 
-- [ ] Define immutable records: `Note`, `Link`, `Backlink`, `ValidationIssue`
-- [ ] `FrontmatterParser` using snakeyaml-engine; defensive against malformed YAML; returns a typed frontmatter object + per-file errors
-- [ ] `MarkdownBodyParser` wrapping commonmark-java, exposing the AST
-- [ ] `WikiLinkExtractor` — walks text nodes, emits `[[target]]` tokens, strips `#heading` and `|display`, ignores `![[embed]]`
-- [ ] `HashtagExtractor` — walks text nodes, matches `(?<=^|\s)#[A-Za-z0-9_/-]+`, lowercases and dedups
-- [ ] `TitleResolver` — frontmatter `title:` → filename without `.md` → ID-derived; returns resolved title plus a flag indicating whether a warning should be raised
-- [ ] `IdValidator` — regex `^[a-z][a-z0-9]*_[a-z0-9_]+$`, verifies prefix matches `type:`
-- [ ] `NoteAssembler` — composes the above into a `ParseResult` (a `Note` or a list of errors)
-- [ ] Unit tests for each parser with small fixture strings
+- [x] Define immutable records: `Note`, `Link`, `Backlink`, `ValidationIssue` (plus `ValidationCategory` enum; `Backlink` is defined but only populated in phase 3)
+- [x] `FrontmatterParser` using snakeyaml-engine; defensive against malformed YAML; returns a typed frontmatter object + per-file errors
+- [x] `MarkdownBodyParser` wrapping commonmark-java, exposing the AST
+- [x] `WikiLinkExtractor` — walks text nodes, emits `[[target]]` tokens, strips `#heading` and `|display`, ignores `![[embed]]`
+- [x] `HashtagExtractor` — walks text nodes, matches `(?<=^|\s)#[A-Za-z0-9_/-]+`, lowercases and dedups (also rejects purely numeric hashes so `#123` issue refs are not treated as tags)
+- [x] `TitleResolver` — frontmatter `title:` → filename without `.md` → ID-derived; returns resolved title plus a flag indicating whether a warning should be raised
+- [x] `IdValidator` — regex `^[a-z][a-z0-9]*_[a-z0-9_]+$`, verifies prefix matches `type:`
+- [x] `NoteAssembler` — composes the above into a `ParseResult` (sealed: `Success(Note, warnings)` or `Failure(errors)`)
+- [x] Unit tests for each parser with small fixture strings (40 unit tests across 6 classes; all green)
 
 ---
 
