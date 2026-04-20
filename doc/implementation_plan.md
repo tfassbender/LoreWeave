@@ -75,15 +75,16 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 
 **Exit criteria**: the app clones a configured remote on first boot, pulls periodically, and swaps to a fresh index atomically. A pull failure does not clear the served index.
 
-- [ ] Config keys under `loreweave.vault.*` (`remote`, `local-path`) and `loreweave.sync.*` (`interval`)
-- [ ] `GitVaultClient` (JGit wrapper): `cloneIfMissing`, `pull` (fast-forward only; fall back to fetch + hard reset on divergent history)
-- [ ] `SyncService` orchestrates: pull → scan → build → swap
-- [ ] `volatile Index` reference; atomic swap after successful build
-- [ ] Single-permit semaphore serializes `/sync` calls
-- [ ] `@Scheduled` periodic pull at `loreweave.sync.interval` (default 5 min)
-- [ ] On pull failure: keep the current `Index`, record a structured last-sync error for `/health`, propagate a typed exception upward
-- [ ] `LastSync` state object: `{ ok, timestamp, updatedFiles, errorMessage? }`
-- [ ] Integration tests: spin up a temp bare repo on disk, have the app clone and pull from it, assert the resulting index
+- [x] Config keys under `loreweave.vault.*` (`remote`, `local-path`) and `loreweave.sync.*` (`interval`) — bound via `@ConfigMapping(prefix = "loreweave")` in `config/LoreWeaveConfig`
+- [x] `GitVaultClient` (JGit wrapper): `cloneIfMissing`, `pull` (fast-forward only; fall back to fetch + hard reset on divergent history). Also rejects populated non-git directories rather than silently cloning on top.
+- [x] `SyncService` orchestrates: clone-if-missing → pull → scan → build → swap. Marked `@Startup` so the first sync runs at boot rather than on first HTTP hit.
+- [x] `volatile Index` reference; atomic swap after successful build
+- [x] Single-permit semaphore serializes `/sync` calls; scheduled ticks use `tryAcquire()` (non-blocking skip), manual calls use `tryAcquire(30s)` and throw `SyncInProgressException` on timeout for a phase-5 409 mapping
+- [x] `@Scheduled` periodic pull at `loreweave.sync.interval` (default 5 min, 30 s initial delay to avoid racing the `@Startup` sync)
+- [x] On pull failure: keep the current `Index`, record a structured last-sync error via `LastSync`, propagate `GitSyncException` upward; scheduled ticks swallow to keep the scheduler alive
+- [x] `LastSync` state object: `{ ok, timestamp, updatedFiles, errorMessage? }` (+ `never()` sentinel for pre-first-sync state)
+- [x] Integration tests: `GitVaultClientTest` builds a temp repo with JGit, clones, commits a second file in the source, asserts the pull fast-forwards and the new file appears; also covers non-git-dir rejection, invalid remote, and up-to-date no-op. `SyncServiceTest` covers failure-preserves-previous-index, empty-vault tolerance, and lastSync transitions — using a fake `GitVaultClient` rather than live git.
+- [x] Also handles the "no remote, no local-path" case: serve an empty index, report `LastSync.ok`, don't crash (verified via real-boot smoke test).
 
 ---
 

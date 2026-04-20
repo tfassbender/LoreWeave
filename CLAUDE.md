@@ -129,12 +129,25 @@ Warnings — note is served but incomplete:
 
 Single `application.properties` with sensible defaults; machine-specific overrides in a git-ignored `application-local.properties` so paths and secrets don't leak into the public repo.
 
-Finalized config keys (implemented in phase 1):
+Finalized config keys:
 
 - `loreweave.vault.remote` — git URL of the Obsidian vault repo
 - `loreweave.vault.local-path` — where the vault is cloned locally (default: `./vault` relative to working dir)
 - `loreweave.auth.token` — bearer token for API access
 - `loreweave.sync.interval` — periodic pull interval (default `5m`)
+- `loreweave.logging.path` — directory for rotating log files (default `./logs`; override to `/var/log/loreweave` on the server)
+
+## Logging
+
+INFO level and above by default, written to both console and a rotating file. The file path is `${loreweave.logging.path}/loreweave.log`, rotated at 10 MB with 10 backups kept. Use `org.jboss.logging.Logger` in new code to stay consistent with Quarkus's internal logging.
+
+Profile overrides use Quarkus's per-profile config convention:
+
+- `application-dev.properties` — active during `./gradlew quarkusDev`. Already set to `DEBUG` for both console and file so you get verbose output while iterating.
+- `application-test.properties` — if we ever need test-profile tuning (currently unused; tests inherit `application.properties`).
+- `application-prod.properties` — prod profile (the default when running the fast-jar). Currently unused; `application.properties` defaults suffice.
+
+Per-package overrides at runtime via `quarkus.log.category."com.tfassbender.loreweave".level=…`.
 
 ## Ecosystem (planned, phases 8–10 of the plan)
 

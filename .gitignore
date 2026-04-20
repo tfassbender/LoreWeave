@@ -25,6 +25,7 @@ Thumbs.db
 .gradle/
 build/
 
-# LoreWeave: machine-specific config and cloned vault
+# LoreWeave: machine-specific config, cloned vault, and local log output
 application-local.properties
 vault/
+logs/
