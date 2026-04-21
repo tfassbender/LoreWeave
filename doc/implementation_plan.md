@@ -134,16 +134,15 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 
 ---
 
-## Phase 8 — CLI validator
+## Phase 8 — Authoring tool (moved out to a sibling project)
 
-**Exit criteria**: `java -jar … check <vault-path>` produces a report and a sensible exit code without touching git or the server.
+The original phase 8 was a CLI validator (`lore-weave check <vault-path>`). During discussion we decided the authoring UX is better served by a **local web dashboard** that auto-detects the surrounding vault and updates live as the author edits in Obsidian — no commit, push, or server round-trip required. That tool has enough surface area of its own (HTTP server, browser UI, launcher scripts, packaging) that it warrants its own repository.
 
-- [ ] Picocli `Check` command: `lore-weave check <vault-path>`
-- [ ] Reuses parsing + validation from `parsing` and `graph` packages — no git, no HTTP, no scheduler
-- [ ] Output format: human-readable summary, per-category samples, optional `--json` mode for tool integration
-- [ ] Exit codes: `0` clean, `1` warnings only, `2` errors present
-- [ ] Integration test against `vault-valid/` and `vault-invalid/`
-- [ ] Document invocation in `doc/cli.md` and link from the README
+- [x] **Out of scope for this repo.** Skipped in favor of a sibling project.
+- [ ] Sibling project: **LoreWeaveWatch** — *link goes here once the repo is public*.
+- [x] Starter plan drafted and moved to a sibling working directory; will land as that project's `doc/implementation_plan.md`.
+- [ ] Code-reuse: the new project starts by vendoring the `domain/`, `parsing/`, and graph-build classes from this repo. Schema or validation changes made here need to be ported across until we promote those packages to a shared `loreweave-core` library.
+- [ ] Phase 10 (Claude Code skill) will likely wrap the sibling project's CLI one-shot mode once it exists; revisit its scope when LoreWeaveWatch lands.
 
 ---
 
@@ -151,20 +150,23 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 
 **Exit criteria**: a fresh vault with the templates installed produces valid notes out of the box.
 
-- [ ] `examples/obsidian-templates/character.md`
-- [ ] `examples/obsidian-templates/event.md`
-- [ ] `examples/obsidian-templates/location.md`
-- [ ] `examples/obsidian-templates/faction.md`
-- [ ] `examples/obsidian-templates/rule.md`
-- [ ] `examples/obsidian-templates/README.md` explaining how to install (Obsidian Templates core plugin) and the placeholder convention
+- [x] `examples/obsidian-templates/character.md` — type/title/summary/schema_version pre-filled; aliases and metadata stubs for faction/status; body with headings + `#character` tag seed.
+- [x] `examples/obsidian-templates/event.md` — metadata.date pre-filled with `{{date:YYYY-MM-DD}}` so every event captures the authoring timestamp.
+- [x] `examples/obsidian-templates/location.md`
+- [x] `examples/obsidian-templates/faction.md`
+- [x] `examples/obsidian-templates/rule.md`
+- [x] `examples/obsidian-templates/README.md` — install instructions for the core Templates plugin, placeholder reference (`{{title}}`, `{{date}}`, `{{time}}`), install-location tradeoff (`.templates/` keeps template files out of LoreWeave's scan; `Templates/` is more conventional but noisier on `/health`), authoring conventions (kebab-case filenames, inline tags, aliases-as-metadata).
+- [x] Placeholder values wrapped in quotes (`"{{title}}"`) so the template files themselves stay valid YAML regardless of where the user installs them — Obsidian's string replacement leaves the quotes intact and the post-expansion file parses correctly.
 
 ---
 
 ## Phase 10 — Claude Code skill
 
-**Exit criteria**: a user copies the skill into `~/.claude/skills/` and Claude Code triggers CLI validation on request.
+**Exit criteria**: a user copies the skill into `~/.claude/skills/` and Claude Code triggers vault validation on request.
 
-- [ ] `claude/skills/lore-weave-validate/SKILL.md` — trigger description + CLI invocation
+> Depends on the **LoreWeaveWatch** sibling project (see phase 8). This skill wraps whatever one-shot CLI mode that project exposes (e.g. a `--check` flag on the same fat jar). Revisit scope once LoreWeaveWatch is published.
+
+- [ ] `claude/skills/lore-weave-validate/SKILL.md` — trigger description + invocation of the sibling-project CLI
 - [ ] Document installation and a typical trigger phrase in `claude/skills/lore-weave-validate/README.md`
 - [ ] Manual end-to-end check: the skill fires and returns structured output on the test vault
 
