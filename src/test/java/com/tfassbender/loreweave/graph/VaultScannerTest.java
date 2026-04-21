@@ -63,7 +63,13 @@ class VaultScannerTest {
                 .containsExactlyInAnyOrder(
                         "characters/kael.md",
                         "characters/rex.md",
+                        "characters/zara.md",
+                        "characters/tarek.md",
                         "locations/karsis.md",
-                        "factions/union.md");
+                        "factions/union.md",
+                        "factions/inner-union.md",
+                        "events/border-incident.md",
+                        "events/karsis-siege.md",
+                        "items/void-crystal.md");
     }
 }

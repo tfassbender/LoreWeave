@@ -125,11 +125,12 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 
 **Exit criteria**: a full-boot integration run hits all five endpoints against a fixture vault and passes.
 
-- [ ] Expand `vault-valid/` fixture to ~10 notes with a representative link graph
-- [ ] Full-boot integration test: start Quarkus in test mode, point at fixture, exercise each endpoint
-- [ ] Sync-failure scenario: remote unreachable → 500 + last-sync error in `/health`; previous index still served
-- [ ] Concurrent-sync scenario: two parallel `/sync` calls → serialized cleanly, no torn index
-- [ ] Validation-error scenario: a `vault-invalid/` fixture load produces the expected `/health` payload
+- [x] Expanded `vault-valid/` fixture to 10 notes: characters/kael, rex, zara, tarek; locations/karsis; factions/union, inner-union; events/border-incident, karsis-siege; items/void-crystal. Updated the count + key-set assertions in `IndexBuilderTest`, `VaultScannerTest`, `RelatedServiceTest`, and `HealthResourceTest` to match.
+- [x] `EndToEndJourneyTest` — `@QuarkusTest` walking health → search → note → related → sync → health in one ordered flow against the expanded fixture. Verifies the wiring as a single scenario, not just each endpoint in isolation.
+- [x] `SyncFailureScenarioTest` — `@QuarkusTest` with `@TestProfile` overriding `loreweave.vault.remote` to a nonexistent file-URL. Asserts: app boots, `/health` reports `DEGRADED` + `last_sync.ok=false` with error message, and `POST /sync` returns 500 `SYNC_FAILED` with a clone-failed detail.
+- [x] `SyncServiceConcurrencyTest` — plain JUnit using a latched fake `GitVaultClient`. Two threads call `syncNow()`; the second blocks on the semaphore while the first holds it. Asserts `maxInFlight == 1` (no interleaving), both syncs complete cleanly, and the index is consistent afterwards.
+- [x] `ValidationErrorScenarioTest` — `@QuarkusTest` with `@TestProfile` pointing at `vault-invalid/`. Asserts all three remaining error categories (`parse_errors`, `missing_required_fields`, `unresolved_links`) and all three warning categories surface in `/health`, and that warning-only notes remain in the served index (`notes_count = 4`).
+- [x] 104 tests passing overall (12 new phase-7 tests on top of phase-6's 92).
 
 ---
 

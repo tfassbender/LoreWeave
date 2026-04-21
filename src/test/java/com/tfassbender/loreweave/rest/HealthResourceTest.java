@@ -19,7 +19,7 @@ class HealthResourceTest {
                 .statusCode(200)
                 .body("status", is("UP"))
                 .body("index_loaded", is(true))
-                .body("notes_count", is(4))
+                .body("notes_count", is(10))
                 .body("last_sync.ok", is(true))
                 .body("last_sync.timestamp", notNullValue())
                 .body("validation.errors", notNullValue())

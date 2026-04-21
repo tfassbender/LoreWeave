@@ -17,12 +17,18 @@ class IndexBuilderTest {
     void buildsValidFixtureVault() {
         Index index = builder.build(Path.of("src/test/resources/vault-valid").toAbsolutePath());
 
-        assertThat(index.size()).isEqualTo(4);
+        assertThat(index.size()).isEqualTo(10);
         assertThat(index.notesByKey().keySet()).containsExactlyInAnyOrder(
                 "characters/kael",
                 "characters/rex",
+                "characters/zara",
+                "characters/tarek",
                 "locations/karsis",
-                "factions/union");
+                "factions/union",
+                "factions/inner-union",
+                "events/border-incident",
+                "events/karsis-siege",
+                "items/void-crystal");
 
         IndexedNote kael = index.get("characters/kael").orElseThrow();
         assertThat(kael.resolvedLinks()).allMatch(ResolvedLink::isResolved);
@@ -30,10 +36,15 @@ class IndexBuilderTest {
                 .extracting(rl -> rl.targetKey().orElse(""))
                 .containsExactly("locations/karsis", "factions/union", "characters/rex");
 
-        // Backlinks: rex links to kael, so kael has a backlink from rex.
+        // Backlinks on kael — rex, zara, border-incident, karsis-siege, and void-crystal all point at him.
         assertThat(kael.backlinks())
                 .extracting(Backlink::sourceKey)
-                .containsExactly("characters/rex");
+                .containsExactlyInAnyOrder(
+                        "characters/rex",
+                        "characters/zara",
+                        "events/border-incident",
+                        "events/karsis-siege",
+                        "items/void-crystal");
 
         IndexedNote union = index.get("factions/union").orElseThrow();
         assertThat(union.backlinks())

@@ -14,6 +14,10 @@ Early development. Design is complete; implementation is in progress — see [`d
 - [Vault schema](doc/vault_schema.md) — frontmatter and body conventions
 - [Implementation plan](doc/implementation_plan.md) — phased roadmap with progress checkboxes
 
+## Related repositories
+
+- [LoreWeaveTestVault](https://github.com/tfassbender/LoreWeaveTestVault) — a small sample Obsidian vault used by the end-to-end tests and as a reference for authoring notes against the schema. Clone it into `./vault/` (git-ignored) or point `loreweave.vault.remote` at its URL.
+
 ## License
 
 [MIT](LICENSE)

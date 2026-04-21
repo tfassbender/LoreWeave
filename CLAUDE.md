@@ -137,6 +137,17 @@ Finalized config keys:
 - `loreweave.sync.interval` — periodic pull interval (default `5m`)
 - `loreweave.logging.path` — directory for rotating log files (default `./logs`; override to `/var/log/loreweave` on the server)
 
+### Machine-specific overrides — `application-local.properties`
+
+Secrets and local paths live in `application-local.properties` at the project root (git-ignored), *not* in `application.properties`. The file is loaded only if you tell the JVM about it:
+
+- Launch with `-Dsmallrye.config.locations=application-local.properties`, or
+- Export `SMALLRYE_CONFIG_LOCATIONS=application-local.properties` before launch.
+
+Why not just put the pointer in `application.properties`? SmallRye Config reads the `*.config.locations` property during bootstrap, *before* `application.properties` has been fully merged into the config; self-referencing the file from inside it doesn't work. Passing the flag (or env var) at launch is the documented path.
+
+For IntelliJ: add the `-D` flag to the Gradle run configuration's "VM options". For systemd: set it in the unit file's `Environment=` directive.
+
 ## Logging
 
 INFO level and above by default, written to both console and a rotating file. The file path is `${loreweave.logging.path}/loreweave.log`, rotated at 10 MB with 10 backups kept. Use `org.jboss.logging.Logger` in new code to stay consistent with Quarkus's internal logging.

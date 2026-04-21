@@ -15,11 +15,16 @@ class RelatedServiceTest {
 
     @Test
     void depthOneReturnsImmediateForwardAndBackwardNeighbors() {
-        // kael links to karsis, union, rex. Also rex links back to kael → backlink.
-        List<RelatedService.Neighbor> n = service.related(index, "characters/kael", 1, 10);
+        // kael links to karsis, union, rex (forward); rex, zara, border-incident,
+        // karsis-siege, and void-crystal link back to kael.
+        List<RelatedService.Neighbor> n = service.related(index, "characters/kael", 1, 20);
         assertThat(n).extracting(x -> x.node().note().key())
                 .containsExactlyInAnyOrder(
-                        "locations/karsis", "factions/union", "characters/rex");
+                        "locations/karsis", "factions/union", "characters/rex",
+                        "characters/zara",
+                        "events/border-incident",
+                        "events/karsis-siege",
+                        "items/void-crystal");
     }
 
     @Test
