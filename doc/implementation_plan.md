@@ -112,10 +112,12 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 
 **Exit criteria**: `doc/open_api_spec.md` matches what the generated OpenAPI says for endpoint shapes.
 
-- [ ] Update `doc/open_api_spec.md` §4.5 `/health` response to include the validation breakdown and `last_sync` object
-- [ ] Document all four error codes in `doc/open_api_spec.md` §5
-- [ ] Add a worked example for `/related` at `depth=2`
-- [ ] Cross-check generated OpenAPI vs the hand-written spec for endpoint shape parity; reconcile discrepancies
+- [x] Update `doc/open_api_spec.md` §4.5 `/health` response to include the validation breakdown and `last_sync` object (full worked example)
+- [x] Document all error codes in `doc/open_api_spec.md` §5 as a table — six codes (the plan's original four plus `SYNC_IN_PROGRESS` and `INTERNAL_ERROR` added during phase 5)
+- [x] Add a worked example for `/related` at `depth=2`, including an explanation of dedup behavior when two paths converge on the same note
+- [x] Cross-check generated OpenAPI vs the hand-written spec for endpoint shape parity; reconcile discrepancies
+- [x] **Bonus fix during cross-check**: the generated `/q/openapi` schema was using camelCase field names while Jackson serialized snake_case at runtime, misleading clients importing the spec. Added `mp.openapi.extensions.smallrye.property-naming-strategy=…SnakeCaseStrategy` so the generated schema now mirrors the wire format.
+- [x] Rewrote §1–§9 of `doc/open_api_spec.md` around the actual live responses (pulled from a booted fast-jar against the `vault-valid` fixture) rather than hand-sketched examples. Each endpoint section now reflects real output, including `display_text` on links/backlinks and the non-null field omission rule.
 
 ---
 
