@@ -143,9 +143,9 @@ Purpose:
 
 ## 10. Git Integration
 - Vault stored in Git repository
-- Periodic automatic pull
-- Optional manual sync endpoint
-- Designed for incremental updates rather than full reloads (future optimization possible)
+- Periodic automatic pull (default 5 min; configurable via `loreweave.sync.interval`)
+- Manual sync endpoint (`POST /sync`)
+- **Full reload on every sync** — the index is rebuilt from scratch behind an atomic `volatile` swap. Incremental indexing is deferred to a later version.
 
 ---
 
@@ -171,10 +171,11 @@ Purpose:
 ---
 
 ## 14. Response Control Mechanisms
-To ensure efficient AI usage:
-- Limit number of search results
-- Limit related graph expansion depth
-- Control maximum response payload size
+To ensure efficient AI usage (numbers match [`open_api_spec.md`](open_api_spec.md) §6):
+- Maximum `/search` results: 10
+- Maximum `/related` neighbors: 20
+- Default `/related` depth: 2; maximum: 5
+- Full note content retrievable only via `/note?path=…` — search hits carry summaries only
 
 ---
 

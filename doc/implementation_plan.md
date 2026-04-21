@@ -139,10 +139,10 @@ A phased, checkbox-driven roadmap. Tick items as they're completed.
 The original phase 8 was a CLI validator (`lore-weave check <vault-path>`). During discussion we decided the authoring UX is better served by a **local web dashboard** that auto-detects the surrounding vault and updates live as the author edits in Obsidian — no commit, push, or server round-trip required. That tool has enough surface area of its own (HTTP server, browser UI, launcher scripts, packaging) that it warrants its own repository.
 
 - [x] **Out of scope for this repo.** Skipped in favor of a sibling project.
-- [ ] Sibling project: **LoreWeaveWatch** — *link goes here once the repo is public*.
-- [x] Starter plan drafted and moved to a sibling working directory; will land as that project's `doc/implementation_plan.md`.
+- [x] Sibling project: [LoreWeaveWatcher](https://github.com/tfassbender/LoreWeaveWatcher).
+- [x] Starter plan drafted and moved to that repository; lands as its `doc/implementation_plan.md`.
 - [ ] Code-reuse: the new project starts by vendoring the `domain/`, `parsing/`, and graph-build classes from this repo. Schema or validation changes made here need to be ported across until we promote those packages to a shared `loreweave-core` library.
-- [ ] Phase 10 (Claude Code skill) will likely wrap the sibling project's CLI one-shot mode once it exists; revisit its scope when LoreWeaveWatch lands.
+- [ ] Phase 10 (Claude Code skill) wraps the sibling project's one-shot `check` mode; tracked as LoreWeaveWatcher's phase 8.
 
 ---
 
@@ -160,15 +160,12 @@ The original phase 8 was a CLI validator (`lore-weave check <vault-path>`). Duri
 
 ---
 
-## Phase 10 — Claude Code skill
+## Phase 10 — Claude Code skill (moved out)
 
-**Exit criteria**: a user copies the skill into `~/.claude/skills/` and Claude Code triggers vault validation on request.
+The Claude Code skill wraps a headless `check` mode of the sibling project's jar, so the two live closest to each other in one repo. Moved into the [LoreWeaveWatcher](https://github.com/tfassbender/LoreWeaveWatcher) implementation plan as its phase 8.
 
-> Depends on the **LoreWeaveWatch** sibling project (see phase 8). This skill wraps whatever one-shot CLI mode that project exposes (e.g. a `--check` flag on the same fat jar). Revisit scope once LoreWeaveWatch is published.
-
-- [ ] `claude/skills/lore-weave-validate/SKILL.md` — trigger description + invocation of the sibling-project CLI
-- [ ] Document installation and a typical trigger phrase in `claude/skills/lore-weave-validate/README.md`
-- [ ] Manual end-to-end check: the skill fires and returns structured output on the test vault
+- [x] **Out of scope for this repo.** Skipped in favor of the sibling project.
+- [x] Sibling project plan item: [LoreWeaveWatcher](https://github.com/tfassbender/LoreWeaveWatcher) — phase 8.
 
 ---
 
@@ -176,10 +173,11 @@ The original phase 8 was a CLI validator (`lore-weave check <vault-path>`). Duri
 
 **Exit criteria**: a new user can read the docs and set up a working vault + API deployment.
 
-- [ ] `doc/authoring_guide.md` — conventions for writing notes: folder structure and naming (the path is the handle), when to link vs tag, summary style, type taxonomy suggestions
-- [ ] `doc/deployment.md` — linux server setup, systemd unit, reverse proxy, TLS, secret management
-- [ ] Update `doc/system_overview.md` if implementation revealed any invariant changes
-- [ ] Verify all cross-references between docs are accurate
+- [x] `doc/authoring_guide.md` — conventions for note structure, kebab-case filenames, link forms (basename vs full-path vs pipe-display), what gets ignored (embeds, attachment links, markdown-style, aliases for routing), tag conventions, links-vs-tags heuristic, summary style, aliases as metadata only, type taxonomy with starter + practical-extension types, pointer to the templates, validation-feedback loop, common pitfalls.
+- [x] `doc/deployment.md` — single-host Linux rollout: prereqs (JDK 21, systemd, domain), directory layout (`/opt /etc /var/lib /var/log`), dedicated `loreweave` user, fast-jar install, `application-local.properties` with `chmod 600`, systemd unit with hardening directives, Caddy reverse proxy (primary) + nginx+certbot (alternative), firewall with localhost bind, token generation + rotation, three git-access modes (public HTTPS / SSH deploy key / PAT), verification recipe + GPT Action import, upgrade + rollback procedure, troubleshooting table.
+- [x] Updated `doc/system_overview.md` — §10 corrected (full-reload-per-sync, not incremental, which was stale); §14 numbers aligned with `open_api_spec.md` §6 (max 10 search, max 20 related, depth default 2 / max 5).
+- [x] Cross-references verified: every `](*.md)` link under `doc/` resolves to an existing file; templates link in `authoring_guide.md` resolves to `examples/obsidian-templates/README.md`; deployment guide's `#phase-12--first-deployment` anchor matches the heading slug.
+- [x] Updated top-level `README.md` with a four-section doc index (for authors / for operators / for API consumers / for anyone curious) and added a link to the sibling [LoreWeaveWatcher](https://github.com/tfassbender/LoreWeaveWatcher) project.
 
 ---
 
