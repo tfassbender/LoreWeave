@@ -30,7 +30,7 @@ public class RelatedResource {
     RelatedService related;
 
     @GET
-    @Operation(summary = "Get graph neighbors of a note")
+    @Operation(operationId = "getRelated", summary = "Get graph neighbors of a note")
     public RelatedResponse related(
             @Parameter(description = "Seed note path.", required = true)
             @QueryParam("path") String path,

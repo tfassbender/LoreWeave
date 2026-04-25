@@ -29,7 +29,8 @@ public class SearchResource {
     SearchService search;
 
     @GET
-    @Operation(summary = "Search notes by keyword",
+    @Operation(operationId = "searchNotes",
+            summary = "Search notes by keyword",
             description = "Case-insensitive substring scoring — title 10, alias 8, tag 6, "
                     + "summary 4, content 1. Results capped at 10.")
     public SearchResponse search(

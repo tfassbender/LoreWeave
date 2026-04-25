@@ -24,7 +24,7 @@ public class NoteResource {
     SyncService sync;
 
     @GET
-    @Operation(summary = "Get a note by path")
+    @Operation(operationId = "getNote", summary = "Get a note by path")
     public NoteResponse get(
             @Parameter(description = "Vault-relative path. Case-insensitive; `.md` suffix optional.",
                     example = "characters/kael", required = true)

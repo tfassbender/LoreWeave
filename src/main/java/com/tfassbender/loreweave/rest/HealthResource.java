@@ -26,7 +26,8 @@ public class HealthResource {
     SyncService sync;
 
     @GET
-    @Operation(summary = "Server and index health",
+    @Operation(operationId = "getHealth",
+            summary = "Server and index health",
             description = "Returns liveness, number of served notes, per-category validation "
                     + "counts (with up to 5 sample paths each), and the last-sync outcome.")
     public HealthResponse health() {

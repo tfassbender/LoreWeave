@@ -19,7 +19,8 @@ public class SyncResource {
     SyncService sync;
 
     @POST
-    @Operation(summary = "Pull the vault and rebuild the index",
+    @Operation(operationId = "triggerSync",
+            summary = "Pull the vault and rebuild the index",
             description = "Returns 500 / SYNC_FAILED if git fails, 409 / SYNC_IN_PROGRESS "
                     + "if another sync is already running.")
     public SyncResponse sync() {
