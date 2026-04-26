@@ -33,6 +33,26 @@ public interface LoreWeaveConfig {
         /** Where the vault is cloned / read from. Defaults to {@code ./vault} relative to the working dir. */
         @WithDefault("./vault")
         Path localPath();
+
+        Auth auth();
+
+        /**
+         * HTTPS basic-auth credentials presented to the vault remote. JGit does not
+         * read git's {@code credential.helper}, so for private repos these must be
+         * configured here (typically in {@code application-local.properties}).
+         *
+         * <p>For GitHub personal access tokens, set {@link #token()} to the PAT and
+         * leave {@link #username()} at its default ({@code x-access-token}); GitHub
+         * accepts any non-empty username when the password is a PAT.
+         */
+        interface Auth {
+            /** Basic-auth username. Defaults to {@code x-access-token} for GitHub PAT use. */
+            @WithDefault("x-access-token")
+            String username();
+
+            /** Basic-auth password / personal access token. Empty means no credentials are attached. */
+            Optional<String> token();
+        }
     }
 
     interface Sync {

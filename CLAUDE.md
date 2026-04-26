@@ -133,6 +133,8 @@ Finalized config keys:
 
 - `loreweave.vault.remote` — git URL of the Obsidian vault repo
 - `loreweave.vault.local-path` — where the vault is cloned locally (default: `./vault` relative to working dir)
+- `loreweave.vault.auth.username` — HTTPS basic-auth username for the vault remote (default `x-access-token`, suitable for GitHub PATs)
+- `loreweave.vault.auth.token` — HTTPS basic-auth password / personal access token. Required for private remotes; JGit does not read git's `credential.helper`, so storing a token via `git config --global credential.helper store` has no effect on LoreWeave
 - `loreweave.auth.token` — bearer token for API access
 - `loreweave.sync.interval` — periodic pull interval (default `5m`)
 - `loreweave.logging.path` — directory for rotating log files (default `./logs`; override to `/var/log/loreweave` on the server)

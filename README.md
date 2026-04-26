@@ -48,6 +48,17 @@ quarkus.http.host=0.0.0.0
 quarkus.http.port=4717
 ```
 
+#### Private vault remote
+
+When `loreweave.vault.remote` points at a private repo, supply HTTPS credentials directly to LoreWeave — JGit does not read git's `credential.helper`, so storing a token via `git config --global credential.helper store` has no effect here. For a GitHub personal access token (Contents: read, or classic `repo` scope), add the PAT to your config and leave the username at its default:
+
+```properties
+loreweave.vault.auth.token=ghp_yourTokenHere
+# loreweave.vault.auth.username defaults to x-access-token, which works for GitHub PATs.
+```
+
+Treat `vault.auth.token` like any other secret — it belongs in `application-local.properties` (or `config/application.properties` in the standalone layout), `chmod 600`, never committed. It is unrelated to `loreweave.auth.token`, which is the bearer token clients present to LoreWeave's own REST API.
+
 ### Linux server with TLS
 
 For a real deployment — systemd unit, Caddy/nginx reverse proxy, Let's Encrypt TLS, hardened file permissions on the token, upgrade procedure — see [`doc/deployment.md`](doc/deployment.md).

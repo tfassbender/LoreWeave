@@ -190,6 +190,7 @@ The Claude Code skill wraps a headless `check` mode of the sibling project's jar
 - [ ] Reverse proxy config (nginx or caddy) in `deploy/`
 - [ ] Let's Encrypt TLS setup
 - [ ] Token stored in `/etc/loreweave/application-local.properties`, `chmod 600`, not in repo
+- [x] HTTPS credentials wired through JGit (`loreweave.vault.auth.username` / `.token`) so private vault remotes work without relying on git's `credential.helper`
 - [ ] First live pull of the private vault on the server
 - [ ] Smoke-test the five endpoints via HTTPS with a real bearer token
 - [ ] Connect the Custom GPT Action, run a handful of representative queries

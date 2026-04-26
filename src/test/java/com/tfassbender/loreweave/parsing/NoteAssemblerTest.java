@@ -47,6 +47,29 @@ class NoteAssemblerTest {
     }
 
     @Test
+    void emptyMetadataValueIsSkipped() {
+        String raw = """
+                ---
+                type: character
+                title: Kael
+                summary: x
+                schema_version: 1
+                metadata:
+                  faction: outer_union
+                  notes:
+                ---
+
+                Body.
+                """;
+        ParseResult result = assembler.assemble(file, raw);
+        assertThat(result).isInstanceOf(ParseResult.Success.class);
+        var success = (ParseResult.Success) result;
+        assertThat(success.note().metadata())
+                .containsEntry("faction", "outer_union")
+                .doesNotContainKey("notes");
+    }
+
+    @Test
     void missingTypeFails() {
         String raw = """
                 ---

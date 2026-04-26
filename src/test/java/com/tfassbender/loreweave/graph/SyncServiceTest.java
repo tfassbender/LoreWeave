@@ -102,6 +102,12 @@ class SyncServiceTest {
                 return new Vault() {
                     @Override public Optional<String> remote() { return remote; }
                     @Override public Path localPath() { return vault; }
+                    @Override public Auth auth() {
+                        return new Auth() {
+                            @Override public String username() { return "x-access-token"; }
+                            @Override public Optional<String> token() { return Optional.empty(); }
+                        };
+                    }
                 };
             }
             @Override public Sync sync() {

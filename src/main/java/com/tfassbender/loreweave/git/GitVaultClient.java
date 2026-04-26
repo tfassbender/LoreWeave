@@ -1,14 +1,19 @@
 package com.tfassbender.loreweave.git;
 
+import com.tfassbender.loreweave.config.LoreWeaveConfig;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand;
 import org.eclipse.jgit.api.ResetCommand;
+import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.jboss.logging.Logger;
 
@@ -31,6 +36,33 @@ import java.util.stream.Stream;
 public class GitVaultClient {
 
     private static final Logger LOG = Logger.getLogger(GitVaultClient.class);
+
+    private final CredentialsProvider credentialsProvider;
+
+    /** No-arg constructor used by tests against unauthenticated local file:// remotes. */
+    public GitVaultClient() {
+        this.credentialsProvider = null;
+    }
+
+    @Inject
+    public GitVaultClient(LoreWeaveConfig config) {
+        this.credentialsProvider = buildProvider(config);
+    }
+
+    private static CredentialsProvider buildProvider(LoreWeaveConfig config) {
+        return config.vault().auth().token()
+                .filter(t -> !t.isBlank())
+                .<CredentialsProvider>map(t -> new UsernamePasswordCredentialsProvider(
+                        config.vault().auth().username(), t))
+                .orElse(null);
+    }
+
+    private <C extends TransportCommand<C, ?>> C withCredentials(C command) {
+        if (credentialsProvider != null) {
+            command.setCredentialsProvider(credentialsProvider);
+        }
+        return command;
+    }
 
     /**
      * Clones the remote into {@code localPath} if the directory doesn't yet
@@ -62,9 +94,9 @@ public class GitVaultClient {
         }
 
         LOG.infof("Cloning %s into %s", remoteUrl, localPath);
-        try (Git ignored = Git.cloneRepository()
+        try (Git ignored = withCredentials(Git.cloneRepository()
                 .setURI(remoteUrl)
-                .setDirectory(localPath.toFile())
+                .setDirectory(localPath.toFile()))
                 .call()) {
             return true;
         } catch (GitAPIException ex) {
@@ -91,8 +123,8 @@ public class GitVaultClient {
             // Try fast-forward-only first.
             org.eclipse.jgit.api.PullResult pull;
             try {
-                pull = git.pull()
-                        .setFastForward(MergeCommand.FastForwardMode.FF_ONLY)
+                pull = withCredentials(git.pull()
+                        .setFastForward(MergeCommand.FastForwardMode.FF_ONLY))
                         .call();
             } catch (GitAPIException ffEx) {
                 return forceResetToOrigin(git, repo, branch, before, ffEx.getMessage());
@@ -115,7 +147,7 @@ public class GitVaultClient {
     private PullResult forceResetToOrigin(Git git, Repository repo, String branch, ObjectId before, String reason) {
         LOG.warnf("Fast-forward pull failed (%s); falling back to hard reset on origin/%s", reason, branch);
         try {
-            git.fetch().call();
+            withCredentials(git.fetch()).call();
             ObjectId remoteHead = repo.resolve("refs/remotes/origin/" + branch);
             if (remoteHead == null) {
                 throw new GitSyncException("remote-tracking ref refs/remotes/origin/" + branch + " is missing");

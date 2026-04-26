@@ -124,6 +124,7 @@ public final class NoteAssembler {
         if (o instanceof Map<?, ?> m) {
             Map<String, Object> out = new java.util.LinkedHashMap<>();
             for (Map.Entry<?, ?> e : m.entrySet()) {
+                if (e.getKey() == null || e.getValue() == null) continue;
                 out.put(String.valueOf(e.getKey()), e.getValue());
             }
             return out;
