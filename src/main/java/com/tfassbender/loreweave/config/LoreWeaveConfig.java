@@ -26,6 +26,8 @@ public interface LoreWeaveConfig {
 
     Logging logging();
 
+    History history();
+
     interface Vault {
         /** Remote git URL of the Obsidian vault. Empty means "use local-path as-is". */
         Optional<String> remote();
@@ -64,6 +66,16 @@ public interface LoreWeaveConfig {
     interface Auth {
         /** Bearer token. Empty means no token configured; all authed endpoints will reject. */
         Optional<String> token();
+    }
+
+    interface History {
+        /** Default page size for {@code GET /history} when the caller omits {@code page_size}. */
+        @WithDefault("10")
+        int defaultPageSize();
+
+        /** Hard upper bound on {@code page_size}; larger requested values are clamped down. */
+        @WithDefault("20")
+        int maxPageSize();
     }
 
     interface Logging {

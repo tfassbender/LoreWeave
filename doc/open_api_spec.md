@@ -278,7 +278,52 @@ None.
 
 ---
 
-## 4.5 Health Check
+## 4.5 Git History
+
+### `GET /history`
+
+Pages through the vault's git log, newest-first. Useful for an AI agent that wants to know what changed in the vault since the conversation started.
+
+### Query Parameters
+
+- `offset` (int, optional, default: 0) — zero-based index of the first commit to return. The newest commit is at offset 0.
+- `page_size` (int, optional, default: 10) — values above the configured maximum are clamped down silently. Default and maximum are configured via `loreweave.history.default-page-size` (default `10`) and `loreweave.history.max-page-size` (default `20`).
+- `include_files` (bool, optional, default: `true`) — when `false`, omits the per-commit `changed_files` list for cheaper message-only calls.
+
+### Response
+
+```json
+{
+  "offset": 0,
+  "page_size": 10,
+  "has_more": true,
+  "commits": [
+    {
+      "sha": "93f531fbb1a0c8e9d5b7e2a6f4c8d1e3a5b7c9d1",
+      "short_sha": "93f531f",
+      "message": "Wire HTTPS credentials through JGit for private vault remotes",
+      "author": "Tobias Faßbender",
+      "timestamp": "2026-04-28T10:14:22Z",
+      "changed_files": [
+        { "path": "src/main/java/com/tfassbender/loreweave/git/GitVaultClient.java", "change": "modified" },
+        { "path": "src/main/java/com/tfassbender/loreweave/config/LoreWeaveConfig.java", "change": "modified" }
+      ]
+    }
+  ]
+}
+```
+
+- `has_more` is `true` iff at least one further commit exists past the returned page.
+- `change` is one of `added`, `modified`, `deleted`, `renamed`, `copied`. Diffs are computed against the commit's **first parent** — root commits report every file as `added`; merge commits show only the first-parent diff (matching `git log --first-parent`).
+- `changed_files` is always present in the wire format. When `include_files=false`, every commit's array is empty.
+- When the local vault directory has no `.git` folder (e.g. no remote configured and an empty local-path), the endpoint returns `{offset, page_size, has_more: false, commits: []}` rather than erroring.
+
+### Errors
+- `400 INVALID_REQUEST` — `offset < 0` or `page_size < 1`.
+
+---
+
+## 4.6 Health Check
 
 ### `GET /health`
 
@@ -352,6 +397,8 @@ All errors share this envelope:
 - Maximum related nodes: 20
 - Default graph depth: 2
 - Maximum graph depth: 5
+- Default history page size: 10 (configurable via `loreweave.history.default-page-size`)
+- Maximum history page size: 20 (configurable via `loreweave.history.max-page-size`); larger requests are clamped, not rejected
 - Full note retrieval only via `/note`
 - `/sync` is single-permit; concurrent requests get `409 SYNC_IN_PROGRESS`.
 

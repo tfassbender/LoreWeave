@@ -119,6 +119,12 @@ class SyncServiceTest {
             @Override public Logging logging() {
                 return () -> tmp.resolve("logs");
             }
+            @Override public History history() {
+                return new History() {
+                    @Override public int defaultPageSize() { return 10; }
+                    @Override public int maxPageSize() { return 20; }
+                };
+            }
         };
     }
 

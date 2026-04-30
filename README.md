@@ -75,14 +75,14 @@ LoreWeave's headline use case: stand it up behind HTTPS and import the OpenAPI s
 
 ### Configure tab
 
-| Field | Value |
-|------|-------|
-| **Name** | Anything that fits the vault — e.g. "Karsis Loremaster". |
-| **Description** | One-liner about what the GPT does. |
-| **Instructions** | The model needs to be told explicitly to use the API rather than fall back on its training data. A working starter prompt is in [`doc/custom_gpt_instructions.md`](doc/custom_gpt_instructions.md) — paste it verbatim and adjust the **SETTING** block to your vault. |
-| **Conversation starters** | Three or four representative questions seed the chat UI: e.g. "Tell me about Kael Varyn", "What happened during the Karsis Siege?". |
-| **Knowledge** | Empty — content comes through the API, not uploaded files. |
-| **Capabilities** | Turn off Web Search, Canvas, DALL·E, and Code Interpreter unless you specifically need them; they nudge the model away from your API. |
+| Field                     | Value                                                                                                                                                                                                                                                                  |
+|---------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Name**                  | Anything that fits the vault — e.g. "Karsis Loremaster".                                                                                                                                                                                                               |
+| **Description**           | One-liner about what the GPT does.                                                                                                                                                                                                                                     |
+| **Instructions**          | The model needs to be told explicitly to use the API rather than fall back on its training data. A working starter prompt is in [`doc/custom_gpt_instructions.md`](doc/custom_gpt_instructions.md) — paste it verbatim and adjust the **SETTING** block to your vault. |
+| **Conversation starters** | Three or four representative questions seed the chat UI: e.g. "Tell me about Kael Varyn", "What happened during the Karsis Siege?".                                                                                                                                    |
+| **Knowledge**             | Empty — content comes through the API, not uploaded files.                                                                                                                                                                                                             |
+| **Capabilities**          | Turn off Web Search, Canvas, DALL·E, and Code Interpreter unless you specifically need them; they nudge the model away from your API.                                                                                                                                  |
 
 ### Action setup
 
@@ -91,7 +91,7 @@ LoreWeave's headline use case: stand it up behind HTTPS and import the OpenAPI s
    - Auth Type: **Bearer**
    - API Key: your `loreweave.auth.token` value.
 2. **Schema → Import from URL** → paste `https://<your-host>/q/openapi` → **Import**.
-3. ChatGPT validates the spec and lists five operations: `getHealth`, `getNote`, `getRelated`, `searchNotes`, `triggerSync`.
+3. ChatGPT validates the spec and lists six operations: `getHealth`, `getHistory`, `getNote`, `getRelated`, `searchNotes`, `triggerSync`.
 4. **Privacy policy URL** — required only when the GPT's visibility is set to "Anyone with the link" or "Everyone". For "Only me" GPTs you can leave it blank.
 
 ### Visibility
@@ -115,6 +115,21 @@ A successful answer with citations looks like this:
 ### When you change the API
 
 If you regenerate the bearer token, redeploy with new endpoints, or change the schema, re-open the Action's edit modal: **Schema → Import from URL** again, then re-paste the token in **Authentication**. ChatGPT caches the spec until you re-import.
+
+## API endpoints
+
+A quick tour of what the service exposes. Full request/response shapes live in [`doc/open_api_spec.md`](doc/open_api_spec.md).
+
+| Method | Path                                         | What it does                                                                                                                         |
+|--------|----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `GET`  | `/search?q=&type=&limit=`                    | Weighted substring search across served notes. Returns summaries + score; fetch full content via `/note`.                            |
+| `GET`  | `/note?path=`                                | Full note for a vault-relative path, including resolved `links` and computed `backlinks`.                                            |
+| `GET`  | `/related?path=&depth=&limit=`               | BFS over forward + backward edges starting at the seed note; depth defaults to 2.                                                    |
+| `POST` | `/sync`                                      | Pulls the vault remote and rebuilds the in-memory index. Serialized; concurrent calls get `409`.                                     |
+| `GET`  | `/history?offset=&page_size=&include_files=` | Pages through the vault's git log, newest-first. Each commit carries message, author, timestamp, and (optionally) the changed files. |
+| `GET`  | `/health`                                    | Public. Index stats, validation breakdown, and last-sync outcome.                                                                    |
+
+All endpoints except `/health` require `Authorization: Bearer <token>`. Errors share a single envelope: `{ "error": { "code", "message", "details" } }`.
 
 ## Documentation
 

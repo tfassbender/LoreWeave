@@ -8,6 +8,8 @@ import org.eclipse.jgit.api.MergeCommand;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -15,11 +17,16 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.util.io.DisabledOutputStream;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -162,6 +169,90 @@ public class GitVaultClient {
         } catch (GitAPIException | IOException ex) {
             throw new GitSyncException("hard-reset fallback failed: " + ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * Reads {@code limit} commits from the {@code HEAD} log, skipping the first
+     * {@code offset}, newest-first. When {@code includeFiles} is {@code true},
+     * each entry is populated with the files it changed against its first
+     * parent (root commit → empty list; merges are diffed against the first
+     * parent only, mirroring {@code git log --first-parent}).
+     *
+     * <p>Returns an empty list when {@code localPath} does not contain a git
+     * repository, so callers can treat "no vault yet" the same way {@code /sync}
+     * does — without erroring.
+     */
+    public List<CommitEntry> readHistory(Path localPath, int offset, int limit, boolean includeFiles) {
+        if (localPath == null) throw new IllegalArgumentException("localPath is required");
+        if (offset < 0) throw new IllegalArgumentException("offset must be >= 0");
+        if (limit <= 0) return List.of();
+        if (!Files.isDirectory(localPath.resolve(".git"))) {
+            return List.of();
+        }
+
+        try (Git git = Git.open(localPath.toFile())) {
+            Iterable<RevCommit> log = git.log().setSkip(offset).setMaxCount(limit).call();
+            List<CommitEntry> entries = new ArrayList<>();
+            Repository repo = git.getRepository();
+            try (DiffFormatter diff = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
+                diff.setRepository(repo);
+                diff.setDetectRenames(true);
+                for (RevCommit commit : log) {
+                    entries.add(toEntry(repo, diff, commit, includeFiles));
+                }
+            }
+            return entries;
+        } catch (IOException | GitAPIException ex) {
+            throw new GitSyncException("failed to read git log at " + localPath + ": " + ex.getMessage(), ex);
+        }
+    }
+
+    private static CommitEntry toEntry(Repository repo, DiffFormatter diff, RevCommit commit, boolean includeFiles) throws IOException {
+        String sha = commit.getId().name();
+        String shortSha = sha.substring(0, 7);
+        String message = commit.getFullMessage().stripTrailing();
+        String author = commit.getAuthorIdent() != null ? commit.getAuthorIdent().getName() : "";
+        Instant ts = commit.getAuthorIdent() != null
+                ? commit.getAuthorIdent().getWhenAsInstant()
+                : Instant.ofEpochSecond(commit.getCommitTime());
+        List<FileChange> files = includeFiles ? changedFilesFirstParent(repo, diff, commit) : List.of();
+        return new CommitEntry(sha, shortSha, message, author, ts, files);
+    }
+
+    private static List<FileChange> changedFilesFirstParent(Repository repo, DiffFormatter diff, RevCommit commit) throws IOException {
+        try (RevWalk walk = new RevWalk(repo);
+             org.eclipse.jgit.lib.ObjectReader reader = repo.newObjectReader()) {
+            CanonicalTreeParser newTree = new CanonicalTreeParser();
+            newTree.reset(reader, commit.getTree().getId());
+
+            CanonicalTreeParser oldTree;
+            if (commit.getParentCount() == 0) {
+                // Root commit: diff against the empty tree → every file appears as ADDED.
+                oldTree = new CanonicalTreeParser();
+            } else {
+                RevCommit parent = walk.parseCommit(commit.getParent(0).getId());
+                oldTree = new CanonicalTreeParser();
+                oldTree.reset(reader, parent.getTree().getId());
+            }
+
+            List<DiffEntry> diffs = diff.scan(oldTree, newTree);
+            List<FileChange> changes = new ArrayList<>(diffs.size());
+            for (DiffEntry de : diffs) {
+                String path = de.getChangeType() == DiffEntry.ChangeType.DELETE ? de.getOldPath() : de.getNewPath();
+                changes.add(new FileChange(path, mapChangeType(de.getChangeType())));
+            }
+            return Collections.unmodifiableList(changes);
+        }
+    }
+
+    private static FileChange.ChangeType mapChangeType(DiffEntry.ChangeType jgit) {
+        return switch (jgit) {
+            case ADD -> FileChange.ChangeType.ADDED;
+            case MODIFY -> FileChange.ChangeType.MODIFIED;
+            case DELETE -> FileChange.ChangeType.DELETED;
+            case RENAME -> FileChange.ChangeType.RENAMED;
+            case COPY -> FileChange.ChangeType.COPIED;
+        };
     }
 
     private static String sha(ObjectId id) {

@@ -106,7 +106,13 @@ Automatically computed reverse relationships:
 - Triggers Git pull
 - Rebuilds in-memory index
 
-### 6.5 Health Check
+### 6.5 Git History
+`GET /history`
+- Pages through the vault's git log, newest-first
+- Returns commit messages, author, timestamp, and (optionally) the changed files per commit
+- Offset + page-size pagination with `has_more` flag
+
+### 6.6 Health Check
 `GET /health`
 - System status
 - Index validity and error reporting
@@ -175,6 +181,7 @@ To ensure efficient AI usage (numbers match [`open_api_spec.md`](open_api_spec.m
 - Maximum `/search` results: 10
 - Maximum `/related` neighbors: 20
 - Default `/related` depth: 2; maximum: 5
+- `/history` page size: default 10, configurable maximum (default 20); oversized requests are clamped
 - Full note content retrievable only via `/note?path=…` — search hits carry summaries only
 
 ---

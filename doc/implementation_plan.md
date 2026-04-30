@@ -197,6 +197,61 @@ The Claude Code skill wraps a headless `check` mode of the sibling project's jar
 
 ---
 
+## Phase 13 — Git history endpoint
+
+**Exit criteria**: a Custom GPT can call `GET /history` mid-conversation, page through commits via offset + page-size, and learn what files changed in each commit.
+
+### Design (confirmed)
+
+- **Pagination**: offset + page-size, not page-number. Caller sends `offset` (0-based index of the first commit, newest-first) and `page_size`.
+- **Default page size**: 10. **Max page size**: 20 (configurable). Values above the max are **clamped** silently (consistent with `/search` and `/related`).
+- **`has_more` detection**: request `page_size + 1` commits from JGit; if we get the extra one, set `has_more=true` and drop it from the response.
+- **Changed files**: diff each commit against its **first parent** (root commit → empty list; merge commits → first-parent diff only, mirroring `git log --first-parent`). Each entry is `{path, change}` with `change ∈ {added, modified, deleted, renamed, copied}`. `DiffFormatter` with rename detection enabled.
+- **`include_files` query flag** (default `true`): when `false`, omit `changed_files` from each commit for cheaper "just the messages" calls.
+- **No git repo on disk**: return `{offset, page_size, has_more: false, commits: []}` — mirrors how `/sync` tolerates the no-remote case rather than erroring.
+- **Auth**: bearer-token, same as the other non-`/health` endpoints.
+- **Concurrency vs `/sync`**: no locking needed — JGit reads commits from the object DB; a concurrent sync that fast-forwards or resets HEAD is safe for readers.
+
+### Response shape
+
+```json
+{
+  "offset": 0,
+  "page_size": 10,
+  "has_more": true,
+  "commits": [
+    {
+      "sha": "93f531f…",
+      "short_sha": "93f531f",
+      "message": "Wire HTTPS credentials through JGit…",
+      "author": "Tobias Faßbender",
+      "timestamp": "2026-04-28T10:14:22Z",
+      "changed_files": [
+        { "path": "src/.../GitVaultClient.java", "change": "modified" }
+      ]
+    }
+  ]
+}
+```
+
+### Tasks
+
+- [x] Config: extend `LoreWeaveConfig` with `history().defaultPageSize()` (default `10`) and `history().maxPageSize()` (default `20`); add the keys to `application.properties` with comments.
+- [x] Domain records: `CommitEntry(sha, shortSha, message, author, timestamp, List<FileChange> changedFiles)`, `FileChange(path, ChangeType)`, `HistoryPage(offset, pageSize, hasMore, List<CommitEntry>)` — all in `com.tfassbender.loreweave.git`.
+- [x] `GitVaultClient.readHistory(localPath, offset, limit, includeFiles)` — uses `Git.log().setSkip(offset).setMaxCount(limit)`; for each `RevCommit`, when `includeFiles` is true, runs a `DiffFormatter` first-parent tree diff with `setDetectRenames(true)` and maps `DiffEntry.ChangeType` to our enum. Returns empty list when the local path has no `.git` directory; throws `GitSyncException` on JGit errors.
+- [x] `HistoryService` — clamps `page_size` to max, rejects `offset < 0` / `page_size < 1` with `IllegalArgumentException` (resource layer translates 400s), requests `page_size + 1` from `GitVaultClient`, slices the extra entry off, sets `has_more`. Lives in `git/` — kept REST-pure (no `InvalidRequestException` dependency); validation happens in the resource.
+- [x] `HistoryResource` — `GET /history?offset=&page_size=&include_files=`, `operationId: getHistory`, OpenAPI `@Operation` / `@Parameter` annotations consistent with the other resources. Maps `change` enum to lowercase strings (`added`/`modified`/…) at the DTO boundary.
+- [x] Verified `BearerTokenFilter` covers `/history` — confirmed via `HistoryResourceTest.requiresBearerToken`.
+- [x] Tests:
+  - [x] `GitVaultClientHistoryTest` — temp JGit repo with root/modify/delete/add commits; asserts newest-first ordering, offset/limit math, `changed_files` correctness across all change types, `includeFiles=false` omits files, missing repo returns empty list, offset past end returns empty.
+  - [x] `HistoryServiceTest` — clamps oversize `page_size`, rejects negative offset and zero page-size, `has_more` true vs false at the boundary, offset is forwarded to the git client. Uses a `FakeGit` extending `GitVaultClient`.
+  - [x] `HistoryResourceTest` (`@QuarkusTest`, RestAssured) — 401 without bearer, default params (empty repo → empty page), explicit page_size, oversize page_size clamps to 20, negative offset → 400 `INVALID_REQUEST`, zero page_size → 400 `INVALID_REQUEST`.
+- [x] Update `doc/open_api_spec.md` — added §4.5 `/history` (Health Check became §4.6); updated §6 with the default + max page-size constraints.
+- [x] Update `doc/system_overview.md` — added §6.5 `/history`, bumped Health Check to §6.6, added page-size constraint to the constraints list.
+- [ ] Tick this phase's checkboxes in the same commit that lands the code.
+
+---
+
 ## Future considerations (explicitly out of v1)
 
 Not scoped now; tracked so we don't forget:
