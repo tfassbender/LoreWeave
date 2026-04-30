@@ -32,11 +32,10 @@ public class HistoryResource {
     @GET
     @Operation(operationId = "getHistory",
             summary = "Page through the vault's git log",
-            description = "Returns commits in newest-first order. Use `offset` to skip past "
-                    + "already-seen commits and `page_size` to control batch size (clamped to "
-                    + "the server's configured maximum). `has_more` indicates whether at least "
-                    + "one further commit exists past the returned page. Set `include_files=false` "
-                    + "to skip the per-commit diff for cheaper message-only calls.")
+            description = "Pages the vault's git log newest-first. `offset` skips past seen "
+                    + "commits; `page_size` is clamped to the server max. `has_more` flags "
+                    + "whether more commits exist past the page. Set `include_files=false` to "
+                    + "skip the per-commit diff for cheaper message-only calls.")
     public HistoryResponse history(
             @Parameter(description = "Zero-based index of the first commit to return (newest = 0).")
             @QueryParam("offset") @DefaultValue("0") int offset,
